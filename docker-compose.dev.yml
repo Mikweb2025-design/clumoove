@@ -48,7 +48,7 @@ services:
     container_name: migration-api
     restart: unless-stopped
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8000"
     environment:
       - DATABASE_URL=postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres-db:5432/cloud_migration_db?sslmode=disable
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis-queue:6379
@@ -87,6 +87,7 @@ services:
       - DATABASE_URL=postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres-db:5432/cloud_migration_db?sslmode=disable
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis-queue:6379
       - ENCRYPTION_SECRET_KEY=${ENCRYPTION_SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_PHOTOS_CLIENT_ID=${GOOGLE_PHOTOS_CLIENT_ID}
