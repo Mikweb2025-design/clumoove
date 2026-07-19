@@ -483,62 +483,59 @@ function App() {
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] flex flex-col font-sans selection:bg-portal-orange selection:text-white relative overflow-x-hidden">
       
-      {/* Full-screen background with Italia tricolore stars */}
+      {/* Full-screen background with stars */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <svg viewBox="0 0 1440 900" xmlns="http://www.w3.org/2000/svg" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
           <defs>
             <radialGradient id="glow-star" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ff6600" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#ff6600" stopOpacity="0" />
+              <stop offset="0%" stopColor="#ffd700" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#ffd700" stopOpacity="0" />
             </radialGradient>
-            <radialGradient id="glow-green" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#009246" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#009246" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="glow-red" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ce2b37" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#ce2b37" stopOpacity="0" />
+            <radialGradient id="glow-blue" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0" />
             </radialGradient>
             <pattern id="star-pattern" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
-              <polygon points="60,5 64,25 85,25 68,38 75,58 60,46 45,58 52,38 35,25 56,25" fill="var(--color-portal-orange)" opacity="0.12" />
+              <polygon points="60,5 64,25 85,25 68,38 75,58 60,46 45,58 52,38 35,25 56,25" fill="#ffd700" opacity="0.12" />
             </pattern>
           </defs>
 
-          {/* Tricolore ambient glows */}
-          <circle cx="360" cy="450" r="300" fill="url(#glow-green)" />
-          <circle cx="1080" cy="450" r="300" fill="url(#glow-red)" />
-          <circle cx="720" cy="450" r="200" fill="url(#glow-star)" />
+          {/* Blue ambient glows */}
+          <circle cx="360" cy="450" r="350" fill="url(#glow-blue)" />
+          <circle cx="1080" cy="450" r="350" fill="url(#glow-blue)" />
+          <circle cx="720" cy="200" r="250" fill="url(#glow-star)" />
+          <circle cx="720" cy="700" r="250" fill="url(#glow-star)" />
 
           {/* Star field pattern */}
           <rect x="0" y="0" width="1440" height="900" fill="url(#star-pattern)" />
 
           {/* Scattered stars */}
-          <g opacity="0.15">
-            <polygon points="200,100 203,115 218,115 206,124 211,138 200,129 189,138 194,124 182,115 197,115" fill="var(--color-portal-orange)" />
-            <polygon points="500,80 502,90 512,90 504,96 507,106 500,100 493,106 496,96 488,90 498,90" fill="var(--color-portal-orange)" />
-            <polygon points="900,150 903,165 918,165 906,174 911,188 900,179 889,188 894,174 882,165 897,165" fill="var(--color-portal-orange)" />
-            <polygon points="1200,200 1202,210 1212,210 1204,216 1207,226 1200,220 1193,226 1196,216 1188,210 1198,210" fill="var(--color-portal-orange)" />
-            <polygon points="300,600 302,610 312,610 304,616 307,626 300,620 293,626 296,616 288,610 298,610" fill="var(--color-portal-orange)" />
-            <polygon points="1100,700 1102,710 1112,710 1104,716 1107,726 1100,720 1093,726 1096,716 1088,710 1098,710" fill="var(--color-portal-orange)" />
-            <polygon points="700,400 703,415 718,415 706,424 711,438 700,429 689,438 694,424 682,415 697,415" fill="var(--color-portal-orange)" />
-            <polygon points="1300,500 1302,510 1312,510 1304,516 1307,526 1300,520 1293,526 1296,516 1288,510 1298,510" fill="var(--color-portal-orange)" />
-            <polygon points="150,350 152,360 162,360 154,366 157,376 150,370 143,376 146,366 138,360 148,360" fill="var(--color-portal-orange)" />
-            <polygon points="800,800 803,815 818,815 806,824 811,838 800,829 789,838 794,824 782,815 797,815" fill="var(--color-portal-orange)" />
-            <polygon points="450,780 452,790 462,790 454,796 457,806 450,800 443,806 446,796 438,790 448,790" fill="var(--color-portal-orange)" />
-            <polygon points="1000,50 1002,60 1012,60 1004,66 1007,76 1000,70 993,76 996,66 988,60 998,60" fill="var(--color-portal-orange)" />
+          <g opacity="0.18">
+            <polygon points="200,100 203,115 218,115 206,124 211,138 200,129 189,138 194,124 182,115 197,115" fill="#ffd700" />
+            <polygon points="500,80 502,90 512,90 504,96 507,106 500,100 493,106 496,96 488,90 498,90" fill="#ffd700" />
+            <polygon points="900,150 903,165 918,165 906,174 911,188 900,179 889,188 894,174 882,165 897,165" fill="#ffd700" />
+            <polygon points="1200,200 1202,210 1212,210 1204,216 1207,226 1200,220 1193,226 1196,216 1188,210 1198,210" fill="#ffd700" />
+            <polygon points="300,600 302,610 312,610 304,616 307,626 300,620 293,626 296,616 288,610 298,610" fill="#ffd700" />
+            <polygon points="1100,700 1102,710 1112,710 1104,716 1107,726 1100,720 1093,726 1096,716 1088,710 1098,710" fill="#ffd700" />
+            <polygon points="700,400 703,415 718,415 706,424 711,438 700,429 689,438 694,424 682,415 697,415" fill="#ffd700" />
+            <polygon points="1300,500 1302,510 1312,510 1304,516 1307,526 1300,520 1293,526 1296,516 1288,510 1298,510" fill="#ffd700" />
+            <polygon points="150,350 152,360 162,360 154,366 157,376 150,370 143,376 146,366 138,360 148,360" fill="#ffd700" />
+            <polygon points="800,800 803,815 818,815 806,824 811,838 800,829 789,838 794,824 782,815 797,815" fill="#ffd700" />
+            <polygon points="450,780 452,790 462,790 454,796 457,806 450,800 443,806 446,796 438,790 448,790" fill="#ffd700" />
+            <polygon points="1000,50 1002,60 1012,60 1004,66 1007,76 1000,70 993,76 996,66 988,60 998,60" fill="#ffd700" />
           </g>
 
           {/* Bridging lines */}
-          <g opacity="0.06">
-            <line x1="200" y1="300" x2="600" y2="200" stroke="var(--color-portal-orange)" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="600" y1="200" x2="1000" y2="300" stroke="var(--color-portal-orange)" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="1000" y1="300" x2="1200" y2="500" stroke="var(--color-portal-orange)" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="1200" y1="500" x2="900" y2="650" stroke="var(--color-portal-orange)" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="900" y1="650" x2="500" y2="700" stroke="var(--color-portal-orange)" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="500" y1="700" x2="200" y2="600" stroke="var(--color-portal-orange)" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="200" y1="600" x2="300" y2="300" stroke="var(--color-portal-orange)" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="720" y1="100" x2="720" y2="800" stroke="var(--color-portal-orange)" strokeWidth="1.5" strokeDasharray="4,8" />
-            <line x1="300" y1="400" x2="1100" y2="400" stroke="var(--color-portal-orange)" strokeWidth="1.5" strokeDasharray="4,8" />
+          <g opacity="0.08">
+            <line x1="200" y1="300" x2="600" y2="200" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
+            <line x1="600" y1="200" x2="1000" y2="300" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
+            <line x1="1000" y1="300" x2="1200" y2="500" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
+            <line x1="1200" y1="500" x2="900" y2="650" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
+            <line x1="900" y1="650" x2="500" y2="700" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
+            <line x1="500" y1="700" x2="200" y2="600" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
+            <line x1="200" y1="600" x2="300" y2="300" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
+            <line x1="720" y1="100" x2="720" y2="800" stroke="#1e3a8a" strokeWidth="1.5" strokeDasharray="4,8" />
+            <line x1="300" y1="400" x2="1100" y2="400" stroke="#1e3a8a" strokeWidth="1.5" strokeDasharray="4,8" />
           </g>
         </svg>
       </div>
