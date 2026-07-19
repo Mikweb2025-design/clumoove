@@ -55,11 +55,19 @@ func InitConfigs() {
 		AuthURL:      "https://accounts.google.com/o/oauth2/v2/auth",
 		TokenURL:     "https://oauth2.googleapis.com/token",
 		Scopes: []string{
-			"https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata",
+			"https://www.googleapis.com/auth/photospicker.mediaitems.readonly",
 			"https://www.googleapis.com/auth/photoslibrary.appendonly",
+			"https://www.googleapis.com/auth/photoslibrary.readonly",
 			"https://www.googleapis.com/auth/userinfo.email",
 			"https://www.googleapis.com/auth/userinfo.profile",
 		},
+	}
+	configs["hidrive"] = ProviderConfig{
+		ClientID:     os.Getenv("HIDRIVE_CLIENT_ID"),
+		ClientSecret: os.Getenv("HIDRIVE_CLIENT_SECRET"),
+		AuthURL:      "https://my.hidrive.com/client/authorize",
+		TokenURL:     "https://my.hidrive.com/oauth2/token",
+		Scopes:       []string{"admin,rw"},
 	}
 }
 
@@ -252,6 +260,36 @@ func GetUserInfo(ctx context.Context, provider, token string) (string, error) {
 			return info.Name, nil
 		}
 		return info.Email, nil
+	case "hidrive":
+		req, err := http.NewRequestWithContext(ctx, "GET", "https://api.hidrive.strato.com/2.1/user/me", nil)
+		if err != nil {
+			return "", err
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		q := req.URL.Query()
+		q.Set("fields", "alias")
+		req.URL.RawQuery = q.Encode()
+
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("failed to fetch hidrive user info: status %d", resp.StatusCode)
+		}
+
+		var info struct {
+			Alias string `json:"alias"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+			return "", err
+		}
+		if info.Alias != "" {
+			return info.Alias, nil
+		}
+		return "HiDrive User", nil
 	default:
 		return "OAuth User", nil
 	}
