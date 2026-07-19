@@ -483,59 +483,254 @@ function App() {
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] flex flex-col font-sans selection:bg-portal-orange selection:text-white relative overflow-x-hidden">
       
-      {/* Full-screen background with stars */}
+      {/* Full-screen Europa background with servers & data flow */}
+      <style>{`
+        @keyframes orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulse-dot { 0%,100% { opacity:0.3; r:3; } 50% { opacity:1; r:6; } }
+        @keyframes data-flow { to { stroke-dashoffset: -200; } }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes spin-star { to { transform: rotate(360deg); } }
+      `}</style>
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <svg viewBox="0 0 1440 900" xmlns="http://www.w3.org/2000/svg" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
           <defs>
-            <radialGradient id="glow-star" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ffd700" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#ffd700" stopOpacity="0" />
-            </radialGradient>
             <radialGradient id="glow-blue" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.2" />
+              <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.12" />
               <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0" />
             </radialGradient>
-            <pattern id="star-pattern" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
-              <polygon points="60,5 64,25 85,25 68,38 75,58 60,46 45,58 52,38 35,25 56,25" fill="#ffd700" opacity="0.12" />
+            <radialGradient id="glow-yellow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#ffd700" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#ffd700" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="server-pulse" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#ffd700" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#ffd700" stopOpacity="0" />
+            </radialGradient>
+            <pattern id="star-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+              <polygon points="50,4 53,22 72,22 57,33 63,51 50,41 37,51 43,33 28,22 47,22" fill="#ffd700" opacity="0.1" />
             </pattern>
           </defs>
 
-          {/* Blue ambient glows */}
-          <circle cx="360" cy="450" r="350" fill="url(#glow-blue)" />
-          <circle cx="1080" cy="450" r="350" fill="url(#glow-blue)" />
-          <circle cx="720" cy="200" r="250" fill="url(#glow-star)" />
-          <circle cx="720" cy="700" r="250" fill="url(#glow-star)" />
+          {/* Ambient glows */}
+          <circle cx="200" cy="200" r="300" fill="url(#glow-blue)" />
+          <circle cx="1200" cy="700" r="350" fill="url(#glow-blue)" />
+          <circle cx="720" cy="100" r="280" fill="url(#glow-yellow)" />
+          <circle cx="720" cy="800" r="280" fill="url(#glow-yellow)" />
 
-          {/* Star field pattern */}
+          {/* Star tiling */}
           <rect x="0" y="0" width="1440" height="900" fill="url(#star-pattern)" />
 
-          {/* Scattered stars */}
-          <g opacity="0.18">
-            <polygon points="200,100 203,115 218,115 206,124 211,138 200,129 189,138 194,124 182,115 197,115" fill="#ffd700" />
-            <polygon points="500,80 502,90 512,90 504,96 507,106 500,100 493,106 496,96 488,90 498,90" fill="#ffd700" />
-            <polygon points="900,150 903,165 918,165 906,174 911,188 900,179 889,188 894,174 882,165 897,165" fill="#ffd700" />
-            <polygon points="1200,200 1202,210 1212,210 1204,216 1207,226 1200,220 1193,226 1196,216 1188,210 1198,210" fill="#ffd700" />
-            <polygon points="300,600 302,610 312,610 304,616 307,626 300,620 293,626 296,616 288,610 298,610" fill="#ffd700" />
-            <polygon points="1100,700 1102,710 1112,710 1104,716 1107,726 1100,720 1093,726 1096,716 1088,710 1098,710" fill="#ffd700" />
-            <polygon points="700,400 703,415 718,415 706,424 711,438 700,429 689,438 694,424 682,415 697,415" fill="#ffd700" />
-            <polygon points="1300,500 1302,510 1312,510 1304,516 1307,526 1300,520 1293,526 1296,516 1288,510 1298,510" fill="#ffd700" />
-            <polygon points="150,350 152,360 162,360 154,366 157,376 150,370 143,376 146,366 138,360 148,360" fill="#ffd700" />
-            <polygon points="800,800 803,815 818,815 806,824 811,838 800,829 789,838 794,824 782,815 797,815" fill="#ffd700" />
-            <polygon points="450,780 452,790 462,790 454,796 457,806 450,800 443,806 446,796 438,790 448,790" fill="#ffd700" />
-            <polygon points="1000,50 1002,60 1012,60 1004,66 1007,76 1000,70 993,76 996,66 988,60 998,60" fill="#ffd700" />
+          {/* Europa landmass (simplified, full map) */}
+          <g opacity="0.08" fill="#1e3a8a">
+            <path d="M520 150 Q540 130 570 125 Q600 120 630 130 Q660 140 680 150 Q700 160 720 170 Q740 180 750 200 Q760 220 755 240 Q750 260 740 280 Q730 300 710 310 Q690 320 670 325 Q650 330 630 335 Q610 340 590 345 Q570 350 550 360 Q530 370 510 380 Q490 390 480 410 Q470 430 465 450 Q460 470 455 490 Q450 510 440 525 Q430 540 420 550 Q410 560 400 565 Q390 570 380 560 Q370 550 365 530 Q360 510 358 490 Q355 470 360 450 Q365 430 375 410 Q385 390 400 370 Q415 350 430 335 Q445 320 460 305 Q475 290 490 270 Q505 250 515 230 Q525 210 525 190 Q525 170 520 150Z" />
+            <path d="M570 125 Q580 110 600 100 Q620 90 640 95 Q660 100 670 115 Q680 130 685 145 Q690 160 680 170 Q670 180 655 185 Q640 190 625 185 Q610 180 600 165 Q590 150 580 140 Q570 130 570 125Z" />
+            <path d="M750 200 Q770 190 790 195 Q810 200 820 220 Q830 240 825 260 Q820 280 810 295 Q800 310 780 315 Q760 320 750 310 Q740 300 745 280 Q750 260 750 240 Q750 220 750 200Z" />
+            <path d="M520 40 Q540 30 560 35 Q580 40 590 60 Q600 80 595 100 Q590 120 580 130 Q570 140 555 135 Q540 130 535 110 Q530 90 528 70 Q526 50 520 40Z" opacity="0.7" />
+            <path d="M590 35 Q610 25 630 30 Q650 35 655 55 Q660 75 655 90 Q650 105 640 115 Q630 125 615 120 Q600 115 595 95 Q590 75 592 55 Q594 35 590 35Z" opacity="0.6" />
+            <path d="M450 150 Q460 140 475 145 Q490 150 495 170 Q500 190 495 210 Q490 230 480 240 Q470 250 460 245 Q450 240 448 220 Q445 200 448 180 Q450 160 450 150Z" opacity="0.75" />
+            <path d="M420 370 Q435 360 455 365 Q475 370 480 390 Q485 410 478 430 Q470 450 455 460 Q440 470 425 465 Q410 460 405 440 Q400 420 405 400 Q410 380 420 370Z" opacity="0.75" />
+            <path d="M590 345 Q600 340 610 345 Q620 350 625 370 Q630 390 632 410 Q635 430 632 450 Q630 470 620 480 Q610 490 600 485 Q590 480 588 460 Q585 440 585 420 Q585 400 587 380 Q590 360 590 345Z" opacity="0.75" />
+            <path d="M650 325 Q670 320 690 330 Q710 340 720 360 Q730 380 728 400 Q725 420 715 435 Q705 450 690 455 Q675 460 660 455 Q645 450 640 430 Q635 410 638 390 Q640 370 645 350 Q650 330 650 325Z" opacity="0.7" />
+            <path d="M680 170 Q710 160 740 165 Q770 170 790 190 Q810 210 815 240 Q820 270 810 300 Q800 330 780 345 Q760 360 735 355 Q710 350 695 335 Q680 320 675 300 Q670 280 670 260 Q670 240 672 220 Q675 200 680 180Z" opacity="0.65" />
           </g>
 
-          {/* Bridging lines */}
-          <g opacity="0.08">
-            <line x1="200" y1="300" x2="600" y2="200" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="600" y1="200" x2="1000" y2="300" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="1000" y1="300" x2="1200" y2="500" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="1200" y1="500" x2="900" y2="650" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="900" y1="650" x2="500" y2="700" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="500" y1="700" x2="200" y2="600" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="200" y1="600" x2="300" y2="300" stroke="#ffd700" strokeWidth="2" strokeDasharray="8,6" />
-            <line x1="720" y1="100" x2="720" y2="800" stroke="#1e3a8a" strokeWidth="1.5" strokeDasharray="4,8" />
-            <line x1="300" y1="400" x2="1100" y2="400" stroke="#1e3a8a" strokeWidth="1.5" strokeDasharray="4,8" />
+          {/* Server/Data Centre markers with pulsing animation */}
+          <g>
+            <circle cx="485" cy="200" r="18" fill="url(#server-pulse)">
+              <animate attributeName="r" values="12;22;12" dur="2s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="485" cy="200" r="4" fill="#ffd700">
+              <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite" />
+            </circle>
+            <text x="475" y="188" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">LON</text>
+
+            <circle cx="600" cy="130" r="18" fill="url(#server-pulse)">
+              <animate attributeName="r" values="12;22;12" dur="2.5s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="600" cy="130" r="4" fill="#ffd700">
+              <animate attributeName="r" values="3;6;3" dur="2.5s" repeatCount="indefinite" />
+            </circle>
+            <text x="590" y="118" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">AMS</text>
+
+            <circle cx="700" cy="170" r="18" fill="url(#server-pulse)">
+              <animate attributeName="r" values="12;22;12" dur="1.8s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="700" cy="170" r="4" fill="#ffd700">
+              <animate attributeName="r" values="3;6;3" dur="1.8s" repeatCount="indefinite" />
+            </circle>
+            <text x="690" y="158" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">FRA</text>
+
+            <circle cx="750" cy="270" r="18" fill="url(#server-pulse)">
+              <animate attributeName="r" values="12;22;12" dur="3s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="750" cy="270" r="4" fill="#ffd700">
+              <animate attributeName="r" values="3;6;3" dur="3s" repeatCount="indefinite" />
+            </circle>
+            <text x="740" y="258" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">FRA2</text>
+
+            <circle cx="600" cy="330" r="18" fill="url(#server-pulse)">
+              <animate attributeName="r" values="12;22;12" dur="2.2s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="600" cy="330" r="4" fill="#ffd700">
+              <animate attributeName="r" values="3;6;3" dur="2.2s" repeatCount="indefinite" />
+            </circle>
+            <text x="590" y="318" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">MIL</text>
+
+            <circle cx="440" cy="430" r="18" fill="url(#server-pulse)">
+              <animate attributeName="r" values="12;22;12" dur="2.7s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="440" cy="430" r="4" fill="#ffd700">
+              <animate attributeName="r" values="3;6;3" dur="2.7s" repeatCount="indefinite" />
+            </circle>
+            <text x="430" y="418" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">MAD</text>
+
+            <circle cx="695" cy="370" r="18" fill="url(#server-pulse)">
+              <animate attributeName="r" values="12;22;12" dur="2s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="695" cy="370" r="4" fill="#ffd700">
+              <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite" />
+            </circle>
+            <text x="685" y="358" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">VIE</text>
+
+            <circle cx="790" cy="310" r="18" fill="url(#server-pulse)">
+              <animate attributeName="r" values="12;22;12" dur="2.8s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="790" cy="310" r="4" fill="#ffd700">
+              <animate attributeName="r" values="3;6;3" dur="2.8s" repeatCount="indefinite" />
+            </circle>
+            <text x="780" y="298" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">WAW</text>
+
+            <circle cx="540" cy="90" r="18" fill="url(#server-pulse)">
+              <animate attributeName="r" values="12;22;12" dur="2.3s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="540" cy="90" r="4" fill="#ffd700">
+              <animate attributeName="r" values="3;6;3" dur="2.3s" repeatCount="indefinite" />
+            </circle>
+            <text x="530" y="78" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">CPH</text>
+
+            <circle cx="650" cy="260" r="18" fill="url(#server-pulse)">
+              <animate attributeName="r" values="12;22;12" dur="1.9s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="650" cy="260" r="4" fill="#ffd700">
+              <animate attributeName="r" values="3;6;3" dur="1.9s" repeatCount="indefinite" />
+            </circle>
+            <text x="640" y="248" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">ZRH</text>
+
+            {/* Extra data flow server markers */}
+            <circle cx="800" cy="150" r="12" fill="url(#server-pulse)">
+              <animate attributeName="r" values="8;16;8" dur="3.2s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="800" cy="150" r="3" fill="#ffd700">
+              <animate attributeName="r" values="2;5;2" dur="3.2s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="500" cy="300" r="12" fill="url(#server-pulse)">
+              <animate attributeName="r" values="8;16;8" dur="2.6s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="500" cy="300" r="3" fill="#ffd700">
+              <animate attributeName="r" values="2;5;2" dur="2.6s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="680" cy="450" r="12" fill="url(#server-pulse)">
+              <animate attributeName="r" values="8;16;8" dur="3.5s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="680" cy="450" r="3" fill="#ffd700">
+              <animate attributeName="r" values="2;5;2" dur="3.5s" repeatCount="indefinite" />
+            </circle>
+          </g>
+
+          {/* Data flow lines with animated dash offset */}
+          <g opacity="0.15">
+            <line x1="485" y1="200" x2="600" y2="130" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3s" repeatCount="indefinite" />
+            </line>
+            <line x1="600" y1="130" x2="700" y2="170" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="2.5s" repeatCount="indefinite" />
+            </line>
+            <line x1="700" y1="170" x2="750" y2="270" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="4s" repeatCount="indefinite" />
+            </line>
+            <line x1="600" y1="330" x2="695" y2="370" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3.5s" repeatCount="indefinite" />
+            </line>
+            <line x1="650" y1="260" x2="600" y2="330" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="2.8s" repeatCount="indefinite" />
+            </line>
+            <line x1="750" y1="270" x2="695" y2="370" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3.2s" repeatCount="indefinite" />
+            </line>
+            <line x1="750" y1="270" x2="790" y2="310" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="2.2s" repeatCount="indefinite" />
+            </line>
+            <line x1="440" y1="430" x2="600" y2="330" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="4.5s" repeatCount="indefinite" />
+            </line>
+            <line x1="700" y1="170" x2="790" y2="310" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3.8s" repeatCount="indefinite" />
+            </line>
+            <line x1="600" y1="130" x2="540" y2="90" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="2s" repeatCount="indefinite" />
+            </line>
+            <line x1="650" y1="260" x2="700" y2="170" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3s" repeatCount="indefinite" />
+            </line>
+            <line x1="800" y1="150" x2="700" y2="170" stroke="url(#glow-yellow)" strokeWidth="1.5" strokeDasharray="6,8">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3.3s" repeatCount="indefinite" />
+            </line>
+            <line x1="500" y1="300" x2="600" y2="330" stroke="url(#glow-yellow)" strokeWidth="1.5" strokeDasharray="6,8">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="2.7s" repeatCount="indefinite" />
+            </line>
+            <line x1="680" y1="450" x2="600" y2="330" stroke="url(#glow-yellow)" strokeWidth="1.5" strokeDasharray="6,8">
+              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="4.2s" repeatCount="indefinite" />
+            </line>
+          </g>
+
+          {/* Scattered stars (rotating) */}
+          <g opacity="0.2">
+            <g><animateTransform attributeName="transform" type="rotate" from="0 200 300" to="360 200 300" dur="20s" repeatCount="indefinite" />
+              <polygon points="200,300 203,315 218,315 206,324 211,338 200,329 189,338 194,324 182,315 197,315" fill="#ffd700" />
+            </g>
+            <g><animateTransform attributeName="transform" type="rotate" from="0 900 150" to="360 900 150" dur="25s" repeatCount="indefinite" />
+              <polygon points="900,150 903,165 918,165 906,174 911,188 900,179 889,188 894,174 882,165 897,165" fill="#ffd700" />
+            </g>
+            <g><animateTransform attributeName="transform" type="rotate" from="0 1200 600" to="360 1200 600" dur="30s" repeatCount="indefinite" />
+              <polygon points="1200,600 1202,610 1212,610 1204,616 1207,626 1200,620 1193,626 1196,616 1188,610 1198,610" fill="#ffd700" />
+            </g>
+            <g><animateTransform attributeName="transform" type="rotate" from="0 300 700" to="360 300 700" dur="22s" repeatCount="indefinite" />
+              <polygon points="300,700 302,710 312,710 304,716 307,726 300,720 293,726 296,716 288,710 298,710" fill="#ffd700" />
+            </g>
+            <g><animateTransform attributeName="transform" type="rotate" from="0 1100 200" to="360 1100 200" dur="28s" repeatCount="indefinite" />
+              <polygon points="1100,200 1102,210 1112,210 1104,216 1107,226 1100,220 1093,226 1096,216 1088,210 1098,210" fill="#ffd700" />
+            </g>
+            <g><animateTransform attributeName="transform" type="rotate" from="0 400 450" to="360 400 450" dur="35s" repeatCount="indefinite" />
+              <polygon points="400,450 403,465 418,465 406,474 411,488 400,479 389,488 394,474 382,465 397,465" fill="#ffd700" />
+            </g>
+            <g><animateTransform attributeName="transform" type="rotate" from="0 1300 350" to="360 1300 350" dur="18s" repeatCount="indefinite" />
+              <polygon points="1300,350 1302,360 1312,360 1304,366 1307,376 1300,370 1293,376 1296,366 1288,360 1298,360" fill="#ffd700" />
+            </g>
+            <g><animateTransform attributeName="transform" type="rotate" from="0 100 600" to="360 100 600" dur="26s" repeatCount="indefinite" />
+              <polygon points="100,600 103,615 118,615 106,624 111,638 100,629 89,638 94,624 82,615 97,615" fill="#ffd700" />
+            </g>
+            <g><animateTransform attributeName="transform" type="rotate" from="0 800 800" to="360 800 800" dur="32s" repeatCount="indefinite" />
+              <polygon points="800,800 803,815 818,815 806,824 811,838 800,829 789,838 794,824 782,815 797,815" fill="#ffd700" />
+            </g>
+            <g><animateTransform attributeName="transform" type="rotate" from="0 500 50" to="360 500 50" dur="24s" repeatCount="indefinite" />
+              <polygon points="500,50 502,60 512,60 504,66 507,76 500,70 493,76 496,66 488,60 498,60" fill="#ffd700" />
+            </g>
+          </g>
+
+          {/* Orbiting data packets */}
+          <g opacity="0.12">
+            <circle cx="540" cy="90" r="2" fill="#ffd700">
+              <animateMotion dur="8s" repeatCount="indefinite" path="M540,90 Q600,130 700,170 Q800,150 790,310 Q750,270 700,170 Q600,130 540,90" />
+            </circle>
+            <circle cx="750" cy="270" r="2" fill="#ffd700">
+              <animateMotion dur="10s" repeatCount="indefinite" path="M750,270 Q790,310 695,370 Q600,330 650,260 Q700,170 750,270" />
+            </circle>
+            <circle cx="600" cy="330" r="2" fill="#ffd700">
+              <animateMotion dur="12s" repeatCount="indefinite" path="M600,330 Q440,430 500,300 Q600,130 650,260 Q695,370 600,330" />
+            </circle>
+            <circle cx="700" cy="170" r="2" fill="#ffd700">
+              <animateMotion dur="9s" repeatCount="indefinite" path="M700,170 Q650,260 600,330 Q695,370 750,270 Q790,310 800,150 Q700,170" />
+            </circle>
           </g>
         </svg>
       </div>
