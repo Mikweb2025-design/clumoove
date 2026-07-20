@@ -678,18 +678,6 @@ export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps
             >
               €2 {t('coffee.buy')}
             </button>
-            <button
-              type="button"
-              className="text-[10px] font-mono text-amber-500 hover:text-amber-700 underline underline-offset-2 transition-colors cursor-pointer whitespace-nowrap"
-              onClick={() => {
-                onGoToConnect?.();
-                setError('');
-                setSuccessMessage(t('coffee.registerToActivate'));
-                setIsLogin(false);
-              }}
-            >
-              Test
-            </button>
           </div>
         </div>
       </div>
