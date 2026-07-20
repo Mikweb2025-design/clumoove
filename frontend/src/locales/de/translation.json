@@ -626,13 +626,16 @@
       "paypalEmail": "PayPal-E-Mail",
       "coffeePrice": "Kaffeepreis",
       "freeTransferGB": "Kostenloses Kontingent GB",
-      "paypalSaved": "PayPal-Einstellungen gespeichert"
+      "paypalSaved": "PayPal-Einstellungen gespeichert",
+      "coffeeRequired": "Kaffeezahlung erforderlich",
+      "coffeeRequiredHint": "Wenn AN, sind Free-User auf das kostenlose Kontingent (GB) begrenzt. Deaktivieren für unbegrenzte Übertragungen für alle registrierten Benutzer."
     }
   },
   "coffee": {
     "title": "☕ Kauf mir einen Kaffee",
     "description": "100 GB kostenlos übertragen. Unterstütze das Projekt mit €2 und erhalte lebenslang unbegrenzte Übertragungen.",
-    "usage": "{{used}} von deinem kostenlosen Kontingent genutzt",
+    "usage": "{{used}} / {{total}}",
+    "limitReached": "Limit erreicht!",
     "buy": "Kaffee kaufen",
     "paymentFailed": "Zahlung fehlgeschlagen. Bitte versuche es erneut.",
     "thankYou": "Vielen Dank! ☕ Genieße unbegrenzte Übertragungen!",

@@ -1754,24 +1754,30 @@ func (s *APIServer) handleStart(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserIDFromContext(r.Context())
 
 	// Free tier check: non-paying users must stay within free_transfer_gb
-	freeGB, _ := db.GetSetting(s.db, "free_transfer_gb")
-	if freeGB == "" {
-		freeGB = "100"
+	coffeeRequired, _ := db.GetSetting(s.db, "coffee_required")
+	if coffeeRequired == "" {
+		coffeeRequired = "true"
 	}
-	freeBytes, err := strconv.ParseInt(freeGB, 10, 64)
-	if err != nil {
-		freeBytes = 100
-	}
-	freeBytes *= 1 << 30 // convert GB to bytes
+	if coffeeRequired == "true" {
+		freeGB, _ := db.GetSetting(s.db, "free_transfer_gb")
+		if freeGB == "" {
+			freeGB = "100"
+		}
+		freeBytes, err := strconv.ParseInt(freeGB, 10, 64)
+		if err != nil {
+			freeBytes = 100
+		}
+		freeBytes *= 1 << 30 // convert GB to bytes
 
-	user, err := db.GetUserByID(s.db, userID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, ErrInternalError)
-		return
-	}
-	if !user.CoffeePaid && user.TotalBytesTransferred >= freeBytes {
-		writeError(w, http.StatusPaymentRequired, ErrFreeTierLimit)
-		return
+		user, err := db.GetUserByID(s.db, userID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, ErrInternalError)
+			return
+		}
+		if !user.CoffeePaid && user.TotalBytesTransferred >= freeBytes {
+			writeError(w, http.StatusPaymentRequired, ErrFreeTierLimit)
+			return
+		}
 	}
 
 	// Enforce a per-user cap on simultaneously active migrations to prevent
@@ -3743,6 +3749,10 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 	if freeGB == "" {
 		freeGB = "100"
 	}
+	coffeeReq, _ := db.GetSetting(s.db, "coffee_required")
+	if coffeeReq == "" {
+		coffeeReq = "true"
+	}
 
 	resp := map[string]interface{}{
 		"registrations_enabled": val,
@@ -3751,6 +3761,7 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		"paypal_email":          paypalEmail,
 		"coffee_price":          coffeePrice,
 		"free_transfer_gb":      freeGB,
+		"coffee_required":       coffeeReq,
 	}
 
 	if claims, ok := r.Context().Value(auth.ClaimsKey).(*auth.Claims); ok && claims != nil {
@@ -3792,6 +3803,7 @@ func (s *APIServer) handleUpdateSetting(w http.ResponseWriter, r *http.Request) 
 		"paypal_email":          true,
 		"coffee_price":          true,
 		"free_transfer_gb":      true,
+		"coffee_required":       true,
 	}
 	if !allowedKeys[req.Key] {
 		writeError(w, http.StatusForbidden, ErrSettingForbidden)
@@ -3800,6 +3812,7 @@ func (s *APIServer) handleUpdateSetting(w http.ResponseWriter, r *http.Request) 
 
 	boolKeys := map[string]bool{
 		"registrations_enabled": true,
+		"coffee_required":       true,
 	}
 	if boolKeys[req.Key] && req.Value != "true" && req.Value != "false" {
 		writeError(w, http.StatusBadRequest, ErrSettingInvalid)

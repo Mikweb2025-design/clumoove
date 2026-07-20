@@ -24,6 +24,7 @@ export function MigrationsDashboard({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [freeTransferGB, setFreeTransferGB] = useState(100);
 
   const { t } = useTranslation();
   const { formatBytes, formatDateTime } = useFormat();
@@ -148,6 +149,16 @@ export function MigrationsDashboard({
       controller.abort();
     };
   }, [apiUrl, token, t]);
+
+  // Fetch free tier limit
+  useEffect(() => {
+    fetch(`${apiUrl}/api/settings`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.free_transfer_gb) setFreeTransferGB(parseInt(data.free_transfer_gb, 10) || 100);
+      })
+      .catch(() => {});
+  }, [apiUrl]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Avoid triggering row selection click
@@ -292,15 +303,26 @@ export function MigrationsDashboard({
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
               <span className="text-2xl shrink-0 mt-0.5">☕</span>
-              <div className="space-y-1">
+              <div className="space-y-2 w-full">
                 <p className="font-display font-bold text-sm">{t('coffee.title')}</p>
                 <p className="text-xs text-amber-700/80 leading-relaxed max-w-lg">
                   {t('coffee.description')}
                 </p>
                 {typeof user.total_bytes_transferred === 'number' && (
-                  <p className="text-[10px] font-mono text-amber-600/70">
-                    {t('coffee.usage', { used: formatBytes(user.total_bytes_transferred) })}
-                  </p>
+                  <div className="space-y-1">
+                    <div className="w-full max-w-md h-2.5 bg-amber-200/60 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500"
+                        style={{ width: `${Math.min((user.total_bytes_transferred / (freeTransferGB * 1_073_741_824)) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] font-mono text-amber-600/70">
+                      {t('coffee.usage', { used: formatBytes(user.total_bytes_transferred), total: formatBytes(freeTransferGB * 1_073_741_824) })}
+                      {user.total_bytes_transferred >= freeTransferGB * 1_073_741_824 && (
+                        <span className="text-red-600 font-bold ml-1">— {t('coffee.limitReached')}</span>
+                      )}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

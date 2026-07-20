@@ -626,13 +626,16 @@
       "paypalEmail": "PayPal Email",
       "coffeePrice": "Coffee Price",
       "freeTransferGB": "Free Tier GB",
-      "paypalSaved": "PayPal settings saved"
+      "paypalSaved": "PayPal settings saved",
+      "coffeeRequired": "Require Coffee Payment",
+      "coffeeRequiredHint": "When ON, free users are limited to the Free Tier GB. Disable to allow unlimited transfers for all registered users."
     }
   },
   "coffee": {
     "title": "☕ Buy me a coffee",
     "description": "100 GB transfer for free. Support the project with €2 and get lifetime unlimited transfers.",
-    "usage": "Used {{used}} of your free tier",
+    "usage": "{{used}} / {{total}}",
+    "limitReached": "Limit reached!",
     "buy": "Buy coffee",
     "paymentFailed": "Payment failed. Please try again.",
     "thankYou": "Thank you! ☕ Enjoy unlimited transfers!",
