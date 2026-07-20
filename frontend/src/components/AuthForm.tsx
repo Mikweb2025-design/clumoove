@@ -646,31 +646,10 @@ export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps
           </button>
         </form>
 
-        {/* Toggle between login and registration */}
-        <div className="mt-6 text-center text-xs font-mono text-[var(--color-text-muted)] border-t border-[var(--color-border)] pt-5">
-          {isLogin ? (
-            registrationsEnabled ? (
-              <p>
-                 {t('auth.noAccount')}{' '}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsLogin(false);
-                    setError('');
-                  }}
-                  className="text-portal-orange font-bold hover:underline transition-all cursor-pointer"
-                >
-                   {t('auth.register')}
-                 </button>
-              </p>
-            ) : (
-              <p className="text-[var(--color-text-muted)]">
-                {t('auth.registrationsDisabled')}
-              </p>
-            )
-          ) : (
+        {!isLogin && (
+          <div className="mt-6 text-center text-xs font-mono text-[var(--color-text-muted)] border-t border-[var(--color-border)] pt-5">
             <p>
-               {t('auth.hasAccount')}{' '}
+              {t('auth.haveAccount')}{' '}
               <button
                 type="button"
                 onClick={() => {
@@ -679,11 +658,11 @@ export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps
                 }}
                 className="text-portal-orange font-bold hover:underline transition-all cursor-pointer"
               >
-                   {t('auth.login')}
-                 </button>
+                {t('auth.login')}
+              </button>
             </p>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Coffee / Free Tier — shown on login page */}
