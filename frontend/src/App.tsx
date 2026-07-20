@@ -73,6 +73,7 @@ function App() {
   const [emailChangeToken, setEmailChangeToken] = useState<string>(emailChangeTokenFromUrl || '');
   const [localStorageEnabled, setLocalStorageEnabled] = useState<boolean>(false);
   const [oauthProviders, setOauthProviders] = useState<Record<string, boolean>>({});
+  const [pendingPayment, setPendingPayment] = useState<boolean>(false);
 
   useEffect(() => {
     fetch(`${API_URL}/api/settings`)
@@ -322,7 +323,17 @@ function App() {
     localStorage.setItem('has_session', 'true');
     setToken(accessToken);
     setUser(loggedUser);
-    replaceNav('history', '');
+    if (pendingPayment) {
+      setPendingPayment(false);
+      fetch(`${API_URL}/api/payment/verify`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      }).finally(() => {
+        replaceNav('connect', '');
+      });
+    } else {
+      replaceNav('history', '');
+    }
   };
 
   // OAuth callback page posts tokens to window.opener via postMessage. The
@@ -993,7 +1004,7 @@ function App() {
       <main className="flex-grow flex flex-col justify-center px-6 py-8 max-w-5xl w-full mx-auto relative z-10 animate-slide-up">
         <div className="w-full">
           {step === 'login' && (
-            <AuthForm apiUrl={API_URL} onAuthSuccess={handleAuthSuccess} />
+            <AuthForm apiUrl={API_URL} onAuthSuccess={handleAuthSuccess} onGoToConnect={() => setPendingPayment(true)} />
           )}
 
           {step === 'reset-password' && (

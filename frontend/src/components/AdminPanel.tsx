@@ -562,8 +562,7 @@ function SystemTab({ apiUrl, token, onMessage }: {
   const translateApiError = useApiError();
 
   const [registrationsEnabled, setRegistrationsEnabled] = useState<boolean>(true);
-  const [paypalClientID, setPaypalClientID] = useState('');
-  const [paypalClientSecret, setPaypalClientSecret] = useState('');
+  const [paypalEmail, setPaypalEmail] = useState('');
   const [coffeePrice, setCoffeePrice] = useState('2.00');
   const [freeTransferGB, setFreeTransferGB] = useState('100');
   const [loading, setLoading] = useState<boolean>(false);
@@ -576,7 +575,7 @@ function SystemTab({ apiUrl, token, onMessage }: {
       .then((data) => {
         if (!cancelled) {
           setRegistrationsEnabled(data.registrations_enabled !== 'false');
-          setPaypalClientID(data.paypal_client_id || '');
+          setPaypalEmail(data.paypal_email || '');
           setCoffeePrice(data.coffee_price || '2.00');
           setFreeTransferGB(data.free_transfer_gb || '100');
         }
@@ -639,13 +638,9 @@ function SystemTab({ apiUrl, token, onMessage }: {
     setMessage(null);
     setLoading(true);
     try {
-      await updateSetting('paypal_client_id', paypalClientID);
-      if (paypalClientSecret) {
-        await updateSetting('paypal_client_secret', paypalClientSecret);
-      }
+      await updateSetting('paypal_email', paypalEmail);
       await updateSetting('coffee_price', coffeePrice);
       await updateSetting('free_transfer_gb', freeTransferGB);
-      setPaypalClientSecret('');
       onMessage({ text: t('admin.system.paypalSaved'), type: 'success' });
     } catch (err) {
       setMessage({ text: (err as Error).message, type: 'error' });
@@ -679,22 +674,12 @@ function SystemTab({ apiUrl, token, onMessage }: {
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label className="block text-[10px] font-mono text-[var(--color-text-muted)] mb-1">{t('admin.system.paypalClientId')}</label>
+            <label className="block text-[10px] font-mono text-[var(--color-text-muted)] mb-1">{t('admin.system.paypalEmail')}</label>
             <input
-              value={paypalClientID}
-              onChange={(e) => setPaypalClientID(e.target.value)}
+              value={paypalEmail}
+              onChange={(e) => setPaypalEmail(e.target.value)}
               className={inputCls}
-              placeholder="..."
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-mono text-[var(--color-text-muted)] mb-1">{t('admin.system.paypalClientSecret')}</label>
-            <input
-              type="password"
-              value={paypalClientSecret}
-              onChange={(e) => setPaypalClientSecret(e.target.value)}
-              className={inputCls}
-              placeholder="••••••••"
+              placeholder="tua.email@example.com"
             />
           </div>
           <div>

@@ -311,50 +311,20 @@ export function MigrationsDashboard({
                 try {
                   const res = await fetch(`${apiUrl}/api/settings`);
                   const settings = await res.json();
-                  if (settings.paypal_client_id) {
-                    // Dynamically load PayPal SDK and render button
-                    const script = document.createElement('script');
-                    script.src = `https://www.paypal.com/sdk/js?client-id=${settings.paypal_client_id}&currency=EUR&intent=capture`;
-                    script.onload = () => {
-                      if (window.paypal) {
-                        const container = document.createElement('div');
-                        container.id = 'paypal-button-container';
-                        const fallback = document.getElementById('paypal-button-container-fallback');
-                        if (fallback && fallback.parentNode) {
-                          fallback.parentNode.replaceChild(container, fallback);
-                        }
-                        window.paypal.Buttons({
-                          createOrder: async () => {
-                            const orderRes = await fetch(`${apiUrl}/api/paypal/create-order`, {
-                              method: 'POST',
-                              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                            });
-                            if (!orderRes.ok) {
-                              const err = await orderRes.json();
-                              throw new Error(err.error || 'Failed to create order');
-                            }
-                            const order = await orderRes.json();
-                            return order.id;
-                          },
-                          onApprove: async (data: { orderID: string }) => {
-                            const captureRes = await fetch(`${apiUrl}/api/paypal/capture-order/${data.orderID}`, {
-                              method: 'POST',
-                              headers: { 'Authorization': `Bearer ${token}` },
-                            });
-                            if (!captureRes.ok) {
-                              alert(t('coffee.paymentFailed'));
-                              return;
-                            }
-                            alert(t('coffee.thankYou'));
-                            window.location.reload();
-                          },
-                          onError: () => {
-                            alert(t('coffee.paymentFailed'));
-                          },
-                        }).render('#paypal-button-container');
+                  if (settings.paypal_email) {
+                    const link = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(settings.paypal_email)}&item_name=Buy+me+a+coffee+-+Clumoove&currency_code=EUR&amount=${encodeURIComponent(settings.coffee_price || '2.00')}`;
+                    window.open(link, '_blank');
+                    if (confirm(t('coffee.paypalConfirm'))) {
+                      const verifyRes = await fetch(`${apiUrl}/api/payment/verify`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                      });
+                      if (verifyRes.ok) {
+                        onStartNewMigration();
+                      } else {
+                        alert(t('coffee.paymentFailed'));
                       }
-                    };
-                    document.body.appendChild(script);
+                    }
                   } else {
                     alert(t('coffee.notConfigured'));
                   }
@@ -363,7 +333,29 @@ export function MigrationsDashboard({
                 }
               }}
             >
-              {t('coffee.buy')} €2
+              {t('coffee.buy')}
+            </button>
+            {/* Dev/test: skip PayPal, call verify directly */}
+            <button
+              type="button"
+              className="text-[10px] font-mono text-amber-500 hover:text-amber-700 underline underline-offset-2 transition-colors cursor-pointer whitespace-nowrap"
+              onClick={async () => {
+                try {
+                  const verifyRes = await fetch(`${apiUrl}/api/payment/verify`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                  });
+                  if (verifyRes.ok) {
+                    onStartNewMigration();
+                  } else {
+                    alert(t('coffee.paymentFailed'));
+                  }
+                } catch {
+                  alert(t('coffee.notConfigured'));
+                }
+              }}
+            >
+              Test payment
             </button>
           </div>
         </div>

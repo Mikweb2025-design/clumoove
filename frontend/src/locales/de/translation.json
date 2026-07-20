@@ -544,6 +544,7 @@
     "PROFILE_NOT_FOUND": "Die gespeicherte Verbindung wurde nicht gefunden.",
     "PROFILE_NAME_EXISTS": "Eine Verbindung mit diesem Namen existiert bereis für diese Rolle.",
     "PROFILE_INVALID_PROVIDER": "Dieser Anbieter wird nicht unterstützt.",
+    "FREE_TIER_LIMIT_REACHED": "Kostenloses Kontingent erreicht. Bitte kaufen Sie einen Kaffee um fortzufahren.",
     "PROFILE_INVALID_ROLE": "Eine Verbindung muss als 'source' oder 'target' verwendet werden."
   },
   "admin": {
@@ -622,8 +623,7 @@
     },
     "system": {
       "paypalTitle": "Buy me a Coffee — PayPal",
-      "paypalClientId": "PayPal Client-ID",
-      "paypalClientSecret": "PayPal Client-Secret",
+      "paypalEmail": "PayPal-E-Mail",
       "coffeePrice": "Kaffeepreis",
       "freeTransferGB": "Kostenloses Kontingent GB",
       "paypalSaved": "PayPal-Einstellungen gespeichert"
@@ -631,11 +631,14 @@
   },
   "coffee": {
     "title": "☕ Kauf mir einen Kaffee",
-    "description": "Du nutzt die kostenlose Version. Unterstütze das Projekt mit €2 und erhalte lebenslang unbegrenzte Übertragungen.",
+    "description": "100 GB kostenlos übertragen. Unterstütze das Projekt mit €2 und erhalte lebenslang unbegrenzte Übertragungen.",
     "usage": "{{used}} von deinem kostenlosen Kontingent genutzt",
     "buy": "Kaffee kaufen",
     "paymentFailed": "Zahlung fehlgeschlagen. Bitte versuche es erneut.",
     "thankYou": "Vielen Dank! ☕ Genieße unbegrenzte Übertragungen!",
-    "notConfigured": "PayPal ist noch nicht konfiguriert."
+    "notConfigured": "PayPal ist noch nicht konfiguriert.",
+    "paypalConfirm": "Hast du die Zahlung via PayPal abgeschlossen? OK klicken zum Bestätigen.",
+    "afterPay": "Zahlungslink geöffnet! Nach der Zahlung registrieren oder anmelden, um unbegrenzte Übertragungen zu aktivieren.",
+    "registerToActivate": "100 GB kostenlos. Danke für deine Spende! Ein letzter Schritt für die Übertragung: hier registrieren."
   }
 }

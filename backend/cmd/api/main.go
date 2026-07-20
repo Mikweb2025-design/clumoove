@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -391,9 +390,8 @@ func main() {
 	mux.Handle("PUT /api/migration/{id}/bandwidth", jwtMiddleware(http.HandlerFunc(server.handleSetBandwidth)))
 	mux.Handle("PUT /api/migration/{id}/threads", jwtMiddleware(http.HandlerFunc(server.handleSetThreads)))
 
-	// PayPal payment routes (Protected)
-	mux.Handle("POST /api/paypal/create-order", jwtMiddleware(http.HandlerFunc(server.handleCreatePayPalOrder)))
-	mux.Handle("POST /api/paypal/capture-order/{id}", jwtMiddleware(http.HandlerFunc(server.handleCapturePayPalOrder)))
+	// Coffee payment routes (Protected)
+	mux.Handle("POST /api/payment/verify", jwtMiddleware(http.HandlerFunc(server.handleVerifyCoffeePayment)))
 	mux.Handle("GET /api/payment/status", jwtMiddleware(http.HandlerFunc(server.handlePaymentStatus)))
 
 	// Schedule Management Routes (Protected)
@@ -1772,7 +1770,7 @@ func (s *APIServer) handleStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !user.CoffeePaid && user.TotalBytesTransferred >= freeBytes {
-		writeError(w, http.StatusPaymentRequired, fmt.Errorf("free tier limit of %s GB reached. Please buy a coffee to continue.", freeGB))
+		writeError(w, http.StatusPaymentRequired, ErrFreeTierLimit)
 		return
 	}
 
@@ -2694,6 +2692,7 @@ const (
 	ErrProfileNotFound       APIErrorCode = "PROFILE_NOT_FOUND"
 	ErrProfileNameExists     APIErrorCode = "PROFILE_NAME_EXISTS"
 	ErrProfileInvalidProvider APIErrorCode = "PROFILE_INVALID_PROVIDER"
+	ErrFreeTierLimit         APIErrorCode = "FREE_TIER_LIMIT_REACHED"
 )
 
 // writeError emits a structured error response carrying only a machine-readable
@@ -3735,7 +3734,7 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		val = "true"
 	}
 
-	paypalClientID, _ := db.GetSetting(s.db, "paypal_client_id")
+	paypalEmail, _ := db.GetSetting(s.db, "paypal_email")
 	coffeePrice, _ := db.GetSetting(s.db, "coffee_price")
 	if coffeePrice == "" {
 		coffeePrice = "2.00"
@@ -3749,7 +3748,7 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		"registrations_enabled": val,
 		"local_storage_enabled": os.Getenv("LOCAL_STORAGE_ROOT") != "",
 		"oauth_providers":       oauth.ConfiguredProviders(),
-		"paypal_client_id":      paypalClientID,
+		"paypal_email":          paypalEmail,
 		"coffee_price":          coffeePrice,
 		"free_transfer_gb":      freeGB,
 	}
@@ -3790,8 +3789,7 @@ func (s *APIServer) handleUpdateSetting(w http.ResponseWriter, r *http.Request) 
 
 	allowedKeys := map[string]bool{
 		"registrations_enabled": true,
-		"paypal_client_id":      true,
-		"paypal_client_secret":  true,
+		"paypal_email":          true,
 		"coffee_price":          true,
 		"free_transfer_gb":      true,
 	}
@@ -3800,7 +3798,10 @@ func (s *APIServer) handleUpdateSetting(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if req.Value != "true" && req.Value != "false" {
+	boolKeys := map[string]bool{
+		"registrations_enabled": true,
+	}
+	if boolKeys[req.Key] && req.Value != "true" && req.Value != "false" {
 		writeError(w, http.StatusBadRequest, ErrSettingInvalid)
 		return
 	}
@@ -3816,120 +3817,20 @@ func (s *APIServer) handleUpdateSetting(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, map[string]interface{}{"success": true})
 }
 
-func (s *APIServer) handleCreatePayPalOrder(w http.ResponseWriter, r *http.Request) {
+func (s *APIServer) handleVerifyCoffeePayment(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(auth.ClaimsKey).(*auth.Claims)
 	if !ok || claims == nil {
 		writeError(w, http.StatusUnauthorized, ErrUnauthorized)
 		return
 	}
 
-	clientID, _ := db.GetSetting(s.db, "paypal_client_id")
-	clientSecret, _ := db.GetSetting(s.db, "paypal_client_secret")
-	price, _ := db.GetSetting(s.db, "coffee_price")
-	if price == "" {
-		price = "2.00"
-	}
-
-	if clientID == "" || clientSecret == "" {
-		writeError(w, http.StatusBadRequest, fmt.Errorf("paypal not configured"))
-		return
-	}
-
-	body := fmt.Sprintf(`{
-		"intent": "CAPTURE",
-		"purchase_units": [{
-			"reference_id": %q,
-			"amount": { "currency_code": "EUR", "value": %q }
-		}]
-	}`, claims.UserID, price)
-
-	req, err := http.NewRequest("POST", "https://api-m.paypal.com/v2/checkout/orders", strings.NewReader(body))
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, ErrInternalError)
-		return
-	}
-	req.SetBasicAuth(clientID, clientSecret)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("PayPal-Request-Id", fmt.Sprintf("coffee-%s-%d", claims.UserID, time.Now().UnixNano()))
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		log.Printf("PayPal create order error: %v\n", err)
-		writeError(w, http.StatusInternalServerError, ErrInternalError)
-		return
-	}
-	defer resp.Body.Close()
-
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		writeError(w, http.StatusInternalServerError, ErrInternalError)
-		return
-	}
-
-	if resp.StatusCode != http.StatusCreated {
-		log.Printf("PayPal create order failed: %v\n", result)
-		writeError(w, http.StatusBadGateway, ErrInternalError)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, result)
-}
-
-func (s *APIServer) handleCapturePayPalOrder(w http.ResponseWriter, r *http.Request) {
-	claims, ok := r.Context().Value(auth.ClaimsKey).(*auth.Claims)
-	if !ok || claims == nil {
-		writeError(w, http.StatusUnauthorized, ErrUnauthorized)
-		return
-	}
-
-	clientID, _ := db.GetSetting(s.db, "paypal_client_id")
-	clientSecret, _ := db.GetSetting(s.db, "paypal_client_secret")
-
-	if clientID == "" || clientSecret == "" {
-		writeError(w, http.StatusBadRequest, fmt.Errorf("paypal not configured"))
-		return
-	}
-
-	orderID := r.PathValue("id")
-	if orderID == "" {
-		writeError(w, http.StatusBadRequest, ErrInvalidBody)
-		return
-	}
-
-	req, err := http.NewRequest("POST", "https://api-m.paypal.com/v2/checkout/orders/"+orderID+"/capture", nil)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, ErrInternalError)
-		return
-	}
-	req.SetBasicAuth(clientID, clientSecret)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		log.Printf("PayPal capture order error: %v\n", err)
-		writeError(w, http.StatusInternalServerError, ErrInternalError)
-		return
-	}
-	defer resp.Body.Close()
-
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		writeError(w, http.StatusInternalServerError, ErrInternalError)
-		return
-	}
-
-	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		log.Printf("PayPal capture order failed: %v\n", result)
-		writeError(w, http.StatusBadGateway, ErrInternalError)
-		return
-	}
-
-	// Mark user as paid
 	if err := db.SetUserCoffeePaid(s.db, claims.UserID); err != nil {
 		log.Printf("Failed to mark user coffee_paid: %v\n", err)
+		writeError(w, http.StatusInternalServerError, ErrInternalError)
+		return
 	}
 
-	writeJSON(w, http.StatusOK, result)
+	writeJSON(w, http.StatusOK, map[string]interface{}{"success": true})
 }
 
 func (s *APIServer) handlePaymentStatus(w http.ResponseWriter, r *http.Request) {
