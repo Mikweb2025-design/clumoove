@@ -7,9 +7,10 @@ import { useApiError } from '../utils/apiError';
 interface AuthFormProps {
   apiUrl: string;
   onAuthSuccess: (token: string, user: UserType) => void;
+  onGoToConnect?: () => void;
 }
 
-export function AuthForm({ apiUrl, onAuthSuccess }: AuthFormProps) {
+export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps) {
   const { t } = useTranslation();
   const translateApiError = useApiError();
   const [isLogin, setIsLogin] = useState<boolean>(true);
@@ -715,6 +716,20 @@ export function AuthForm({ apiUrl, onAuthSuccess }: AuthFormProps) {
               }}
             >
               €2 {t('coffee.buy')}
+            </button>
+            <button
+              type="button"
+              className="text-[10px] font-mono text-amber-500 hover:text-amber-700 underline underline-offset-2 transition-colors cursor-pointer whitespace-nowrap"
+              onClick={() => {
+                onGoToConnect?.();
+                setError('');
+                setSuccessMessage(t('coffee.registerToActivate'));
+                if (isLogin && registrationsEnabled) {
+                  setIsLogin(false);
+                }
+              }}
+            >
+              Test
             </button>
           </div>
         </div>

@@ -1004,7 +1004,7 @@ function App() {
       <main className="flex-grow flex flex-col justify-center px-6 py-8 max-w-5xl w-full mx-auto relative z-10 animate-slide-up">
         <div className="w-full">
           {step === 'login' && (
-            <AuthForm apiUrl={API_URL} onAuthSuccess={handleAuthSuccess} />
+            <AuthForm apiUrl={API_URL} onAuthSuccess={handleAuthSuccess} onGoToConnect={() => setPendingPayment(true)} />
           )}
 
           {step === 'reset-password' && (

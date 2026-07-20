@@ -356,6 +356,28 @@ export function MigrationsDashboard({
             >
               {t('coffee.buy')}
             </button>
+            {/* Dev/test: skip PayPal, call verify directly */}
+            <button
+              type="button"
+              className="text-[10px] font-mono text-amber-500 hover:text-amber-700 underline underline-offset-2 transition-colors cursor-pointer whitespace-nowrap"
+              onClick={async () => {
+                try {
+                  const verifyRes = await fetch(`${apiUrl}/api/payment/verify`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                  });
+                  if (verifyRes.ok) {
+                    onStartNewMigration();
+                  } else {
+                    alert(t('coffee.paymentFailed'));
+                  }
+                } catch {
+                  alert(t('coffee.notConfigured'));
+                }
+              }}
+            >
+              Test payment
+            </button>
           </div>
         </div>
       )}
