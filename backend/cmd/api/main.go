@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -61,6 +62,7 @@ type APIServer struct {
 	jwtSecret     string // HMAC key for JWT signing (separate from encryptionKey)
 	ctx           context.Context
 	rateLimiter   ipRateLimiter
+	httpClient    *http.Client
 	// activeStreams tracks the number of open SSE migration-stream connections
 	// per user so we can cap concurrent streams (each polls the DB on an
 	// interval) and prevent resource exhaustion via connection flooding.
@@ -326,6 +328,7 @@ func main() {
 		jwtSecret:     jwtSecret,
 		ctx:           ctx,
 		rateLimiter:   ipRateLimiter{visitors: make(map[string]*rateVisitor)},
+		httpClient:    &http.Client{Timeout: 30 * time.Second},
 		activeStreams: make(map[string]int),
 		trustedProxy:  trustedProxy,
 	}
@@ -387,6 +390,11 @@ func main() {
 	mux.Handle("POST /api/migration/{id}/reindex", jwtMiddleware(http.HandlerFunc(server.handleReindex)))
 	mux.Handle("PUT /api/migration/{id}/bandwidth", jwtMiddleware(http.HandlerFunc(server.handleSetBandwidth)))
 	mux.Handle("PUT /api/migration/{id}/threads", jwtMiddleware(http.HandlerFunc(server.handleSetThreads)))
+
+	// PayPal payment routes (Protected)
+	mux.Handle("POST /api/paypal/create-order", jwtMiddleware(http.HandlerFunc(server.handleCreatePayPalOrder)))
+	mux.Handle("POST /api/paypal/capture-order/{id}", jwtMiddleware(http.HandlerFunc(server.handleCapturePayPalOrder)))
+	mux.Handle("GET /api/payment/status", jwtMiddleware(http.HandlerFunc(server.handlePaymentStatus)))
 
 	// Schedule Management Routes (Protected)
 	mux.Handle("GET /api/schedule", jwtMiddleware(http.HandlerFunc(server.handleListSchedules)))
@@ -1746,6 +1754,27 @@ func (s *APIServer) handleStart(w http.ResponseWriter, r *http.Request) {
 
 	// Get userID from context
 	userID := auth.GetUserIDFromContext(r.Context())
+
+	// Free tier check: non-paying users must stay within free_transfer_gb
+	freeGB, _ := db.GetSetting(s.db, "free_transfer_gb")
+	if freeGB == "" {
+		freeGB = "100"
+	}
+	freeBytes, err := strconv.ParseInt(freeGB, 10, 64)
+	if err != nil {
+		freeBytes = 100
+	}
+	freeBytes *= 1 << 30 // convert GB to bytes
+
+	user, err := db.GetUserByID(s.db, userID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, ErrInternalError)
+		return
+	}
+	if !user.CoffeePaid && user.TotalBytesTransferred >= freeBytes {
+		writeError(w, http.StatusPaymentRequired, fmt.Errorf("free tier limit of %s GB reached. Please buy a coffee to continue.", freeGB))
+		return
+	}
 
 	// Enforce a per-user cap on simultaneously active migrations to prevent
 	// resource exhaustion / runaway scheduling from a single account.
@@ -3454,11 +3483,13 @@ func (s *APIServer) handleMe(w http.ResponseWriter, r *http.Request) {
 // (login, 2FA verification, and /api/auth/me) so the shape cannot drift.
 func userResponse(u *db.User) map[string]interface{} {
 	resp := map[string]interface{}{
-		"id":           u.ID,
-		"email":        u.Email,
-		"display_name": u.DisplayName,
-		"role":         u.Role,
-		"totp_enabled": u.TotpEnabled,
+		"id":                      u.ID,
+		"email":                   u.Email,
+		"display_name":            u.DisplayName,
+		"role":                    u.Role,
+		"totp_enabled":            u.TotpEnabled,
+		"coffee_paid":             u.CoffeePaid,
+		"total_bytes_transferred": u.TotalBytesTransferred,
 	}
 	if len(u.Avatar) > 0 {
 		resp["avatar"] = avatarDataURL(u)
@@ -3704,11 +3735,34 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		val = "true"
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	paypalClientID, _ := db.GetSetting(s.db, "paypal_client_id")
+	coffeePrice, _ := db.GetSetting(s.db, "coffee_price")
+	if coffeePrice == "" {
+		coffeePrice = "2.00"
+	}
+	freeGB, _ := db.GetSetting(s.db, "free_transfer_gb")
+	if freeGB == "" {
+		freeGB = "100"
+	}
+
+	resp := map[string]interface{}{
 		"registrations_enabled": val,
 		"local_storage_enabled": os.Getenv("LOCAL_STORAGE_ROOT") != "",
 		"oauth_providers":       oauth.ConfiguredProviders(),
-	})
+		"paypal_client_id":      paypalClientID,
+		"coffee_price":          coffeePrice,
+		"free_transfer_gb":      freeGB,
+	}
+
+	if claims, ok := r.Context().Value(auth.ClaimsKey).(*auth.Claims); ok && claims != nil {
+		user, err := db.GetUserByID(s.db, claims.UserID)
+		if err == nil {
+			resp["coffee_paid"] = user.CoffeePaid
+			resp["total_bytes_transferred"] = user.TotalBytesTransferred
+		}
+	}
+
+	writeJSON(w, http.StatusOK, resp)
 }
 
 type UpdateSettingRequest struct {
@@ -3734,7 +3788,14 @@ func (s *APIServer) handleUpdateSetting(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if req.Key != "registrations_enabled" {
+	allowedKeys := map[string]bool{
+		"registrations_enabled": true,
+		"paypal_client_id":      true,
+		"paypal_client_secret":  true,
+		"coffee_price":          true,
+		"free_transfer_gb":      true,
+	}
+	if !allowedKeys[req.Key] {
 		writeError(w, http.StatusForbidden, ErrSettingForbidden)
 		return
 	}
@@ -3753,6 +3814,141 @@ func (s *APIServer) handleUpdateSetting(w http.ResponseWriter, r *http.Request) 
 	s.writeAudit(r, db.AuditSettingUpdated, req.Key, claims.UserID, map[string]interface{}{"value": req.Value})
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{"success": true})
+}
+
+func (s *APIServer) handleCreatePayPalOrder(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(auth.ClaimsKey).(*auth.Claims)
+	if !ok || claims == nil {
+		writeError(w, http.StatusUnauthorized, ErrUnauthorized)
+		return
+	}
+
+	clientID, _ := db.GetSetting(s.db, "paypal_client_id")
+	clientSecret, _ := db.GetSetting(s.db, "paypal_client_secret")
+	price, _ := db.GetSetting(s.db, "coffee_price")
+	if price == "" {
+		price = "2.00"
+	}
+
+	if clientID == "" || clientSecret == "" {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("paypal not configured"))
+		return
+	}
+
+	body := fmt.Sprintf(`{
+		"intent": "CAPTURE",
+		"purchase_units": [{
+			"reference_id": %q,
+			"amount": { "currency_code": "EUR", "value": %q }
+		}]
+	}`, claims.UserID, price)
+
+	req, err := http.NewRequest("POST", "https://api-m.paypal.com/v2/checkout/orders", strings.NewReader(body))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, ErrInternalError)
+		return
+	}
+	req.SetBasicAuth(clientID, clientSecret)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("PayPal-Request-Id", fmt.Sprintf("coffee-%s-%d", claims.UserID, time.Now().UnixNano()))
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		log.Printf("PayPal create order error: %v\n", err)
+		writeError(w, http.StatusInternalServerError, ErrInternalError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		writeError(w, http.StatusInternalServerError, ErrInternalError)
+		return
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		log.Printf("PayPal create order failed: %v\n", result)
+		writeError(w, http.StatusBadGateway, ErrInternalError)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *APIServer) handleCapturePayPalOrder(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(auth.ClaimsKey).(*auth.Claims)
+	if !ok || claims == nil {
+		writeError(w, http.StatusUnauthorized, ErrUnauthorized)
+		return
+	}
+
+	clientID, _ := db.GetSetting(s.db, "paypal_client_id")
+	clientSecret, _ := db.GetSetting(s.db, "paypal_client_secret")
+
+	if clientID == "" || clientSecret == "" {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("paypal not configured"))
+		return
+	}
+
+	orderID := r.PathValue("id")
+	if orderID == "" {
+		writeError(w, http.StatusBadRequest, ErrInvalidBody)
+		return
+	}
+
+	req, err := http.NewRequest("POST", "https://api-m.paypal.com/v2/checkout/orders/"+orderID+"/capture", nil)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, ErrInternalError)
+		return
+	}
+	req.SetBasicAuth(clientID, clientSecret)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		log.Printf("PayPal capture order error: %v\n", err)
+		writeError(w, http.StatusInternalServerError, ErrInternalError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		writeError(w, http.StatusInternalServerError, ErrInternalError)
+		return
+	}
+
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		log.Printf("PayPal capture order failed: %v\n", result)
+		writeError(w, http.StatusBadGateway, ErrInternalError)
+		return
+	}
+
+	// Mark user as paid
+	if err := db.SetUserCoffeePaid(s.db, claims.UserID); err != nil {
+		log.Printf("Failed to mark user coffee_paid: %v\n", err)
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *APIServer) handlePaymentStatus(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(auth.ClaimsKey).(*auth.Claims)
+	if !ok || claims == nil {
+		writeError(w, http.StatusUnauthorized, ErrUnauthorized)
+		return
+	}
+
+	user, err := db.GetUserByID(s.db, claims.UserID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, ErrInternalError)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"coffee_paid":              user.CoffeePaid,
+		"total_bytes_transferred": user.TotalBytesTransferred,
+	})
 }
 
 func (s *APIServer) handleListMigrations(w http.ResponseWriter, r *http.Request) {

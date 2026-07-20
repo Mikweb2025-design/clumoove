@@ -562,6 +562,10 @@ function SystemTab({ apiUrl, token, onMessage }: {
   const translateApiError = useApiError();
 
   const [registrationsEnabled, setRegistrationsEnabled] = useState<boolean>(true);
+  const [paypalClientID, setPaypalClientID] = useState('');
+  const [paypalClientSecret, setPaypalClientSecret] = useState('');
+  const [coffeePrice, setCoffeePrice] = useState('2.00');
+  const [freeTransferGB, setFreeTransferGB] = useState('100');
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -570,13 +574,33 @@ function SystemTab({ apiUrl, token, onMessage }: {
     fetch(`${apiUrl}/api/settings`)
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled) setRegistrationsEnabled(data.registrations_enabled !== 'false');
+        if (!cancelled) {
+          setRegistrationsEnabled(data.registrations_enabled !== 'false');
+          setPaypalClientID(data.paypal_client_id || '');
+          setCoffeePrice(data.coffee_price || '2.00');
+          setFreeTransferGB(data.free_transfer_gb || '100');
+        }
       })
       .catch((err) => {
         console.error('Failed to fetch settings:', err);
       });
     return () => { cancelled = true; };
   }, [apiUrl]);
+
+  const updateSetting = async (key: string, value: string) => {
+    const res = await fetch(`${apiUrl}/api/settings`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ key, value }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({} as { error_code?: string }));
+      throw new Error(translateApiError(data.error_code));
+    }
+  };
 
   const handleToggleRegistrations = async (checked: boolean) => {
     setMessage(null);
@@ -595,7 +619,7 @@ function SystemTab({ apiUrl, token, onMessage }: {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}) as { error_code?: string });
+        const data = await res.json().catch(() => ({} as { error_code?: string }));
         throw new Error(translateApiError(data.error_code));
       }
 
@@ -604,6 +628,25 @@ function SystemTab({ apiUrl, token, onMessage }: {
         text: checked ? t('settings.messages.adminSavedOn') : t('settings.messages.adminSavedOff'),
         type: 'success',
       });
+    } catch (err) {
+      setMessage({ text: (err as Error).message, type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSavePayPal = async () => {
+    setMessage(null);
+    setLoading(true);
+    try {
+      await updateSetting('paypal_client_id', paypalClientID);
+      if (paypalClientSecret) {
+        await updateSetting('paypal_client_secret', paypalClientSecret);
+      }
+      await updateSetting('coffee_price', coffeePrice);
+      await updateSetting('free_transfer_gb', freeTransferGB);
+      setPaypalClientSecret('');
+      onMessage({ text: t('admin.system.paypalSaved'), type: 'success' });
     } catch (err) {
       setMessage({ text: (err as Error).message, type: 'error' });
     } finally {
@@ -627,6 +670,61 @@ function SystemTab({ apiUrl, token, onMessage }: {
           disabled={loading}
           onChange={handleToggleRegistrations}
         />
+      </div>
+
+      <div className="space-y-4 p-4 bg-[var(--color-bg-tertiary)]/30 border border-[var(--color-border)]/50 rounded-2xl">
+        <h4 className="text-xs font-bold text-[var(--color-portal-navy-themed)] font-display flex items-center gap-2">
+          <span className="text-lg">☕</span>
+          {t('admin.system.paypalTitle')}
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[10px] font-mono text-[var(--color-text-muted)] mb-1">{t('admin.system.paypalClientId')}</label>
+            <input
+              value={paypalClientID}
+              onChange={(e) => setPaypalClientID(e.target.value)}
+              className={inputCls}
+              placeholder="..."
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-mono text-[var(--color-text-muted)] mb-1">{t('admin.system.paypalClientSecret')}</label>
+            <input
+              type="password"
+              value={paypalClientSecret}
+              onChange={(e) => setPaypalClientSecret(e.target.value)}
+              className={inputCls}
+              placeholder="••••••••"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-mono text-[var(--color-text-muted)] mb-1">{t('admin.system.coffeePrice')} (EUR)</label>
+            <input
+              value={coffeePrice}
+              onChange={(e) => setCoffeePrice(e.target.value)}
+              className={inputCls}
+              placeholder="2.00"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-mono text-[var(--color-text-muted)] mb-1">{t('admin.system.freeTransferGB')} (GB)</label>
+            <input
+              value={freeTransferGB}
+              onChange={(e) => setFreeTransferGB(e.target.value)}
+              className={inputCls}
+              placeholder="100"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={handleSavePayPal}
+            disabled={loading}
+            className={primaryBtnCls + ' disabled:opacity-50'}
+          >
+            {t('common.save')}
+          </button>
+        </div>
       </div>
     </SectionCard>
   );

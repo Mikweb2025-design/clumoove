@@ -619,6 +619,23 @@
         "2FA_ENABLED": "2FA aktiviert",
         "2FA_DISABLED": "2FA deaktiviert"
       }
+    },
+    "system": {
+      "paypalTitle": "Buy me a Coffee — PayPal",
+      "paypalClientId": "PayPal Client-ID",
+      "paypalClientSecret": "PayPal Client-Secret",
+      "coffeePrice": "Kaffeepreis",
+      "freeTransferGB": "Kostenloses Kontingent GB",
+      "paypalSaved": "PayPal-Einstellungen gespeichert"
     }
+  },
+  "coffee": {
+    "title": "☕ Kauf mir einen Kaffee",
+    "description": "Du nutzt die kostenlose Version. Unterstütze das Projekt mit €2 und erhalte lebenslang unbegrenzte Übertragungen.",
+    "usage": "{{used}} von deinem kostenlosen Kontingent genutzt",
+    "buy": "Kaffee kaufen",
+    "paymentFailed": "Zahlung fehlgeschlagen. Bitte versuche es erneut.",
+    "thankYou": "Vielen Dank! ☕ Genieße unbegrenzte Übertragungen!",
+    "notConfigured": "PayPal ist noch nicht konfiguriert."
   }
 }

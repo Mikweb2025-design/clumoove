@@ -44,6 +44,8 @@ export interface User {
   role?: string;
   avatar?: string;
   totp_enabled?: boolean;
+  coffee_paid?: boolean;
+  total_bytes_transferred?: number;
 }
 
 export interface Migration {

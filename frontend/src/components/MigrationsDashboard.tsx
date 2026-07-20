@@ -285,6 +285,90 @@ export function MigrationsDashboard({
         </div>
       </div>
 
+      {/* Coffee / Free Tier Banner */}
+      {user && !user.coffee_paid && (
+        <div className="relative rounded-2xl p-5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/70 text-amber-900 shadow-sm overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(255,200,50,0.12),transparent_60%)] pointer-events-none" />
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl shrink-0 mt-0.5">☕</span>
+              <div className="space-y-1">
+                <p className="font-display font-bold text-sm">{t('coffee.title')}</p>
+                <p className="text-xs text-amber-700/80 leading-relaxed max-w-lg">
+                  {t('coffee.description')}
+                </p>
+                {typeof user.total_bytes_transferred === 'number' && (
+                  <p className="text-[10px] font-mono text-amber-600/70">
+                    {t('coffee.usage', { used: formatBytes(user.total_bytes_transferred) })}
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              id="paypal-button-container-fallback"
+              className="shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-orange-500 hover:to-amber-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all shadow-sm hover:shadow-md cursor-pointer whitespace-nowrap"
+              onClick={async () => {
+                try {
+                  const res = await fetch(`${apiUrl}/api/settings`);
+                  const settings = await res.json();
+                  if (settings.paypal_client_id) {
+                    // Dynamically load PayPal SDK and render button
+                    const script = document.createElement('script');
+                    script.src = `https://www.paypal.com/sdk/js?client-id=${settings.paypal_client_id}&currency=EUR&intent=capture`;
+                    script.onload = () => {
+                      if (window.paypal) {
+                        const container = document.createElement('div');
+                        container.id = 'paypal-button-container';
+                        const fallback = document.getElementById('paypal-button-container-fallback');
+                        if (fallback && fallback.parentNode) {
+                          fallback.parentNode.replaceChild(container, fallback);
+                        }
+                        window.paypal.Buttons({
+                          createOrder: async () => {
+                            const orderRes = await fetch(`${apiUrl}/api/paypal/create-order`, {
+                              method: 'POST',
+                              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                            });
+                            if (!orderRes.ok) {
+                              const err = await orderRes.json();
+                              throw new Error(err.error || 'Failed to create order');
+                            }
+                            const order = await orderRes.json();
+                            return order.id;
+                          },
+                          onApprove: async (data: { orderID: string }) => {
+                            const captureRes = await fetch(`${apiUrl}/api/paypal/capture-order/${data.orderID}`, {
+                              method: 'POST',
+                              headers: { 'Authorization': `Bearer ${token}` },
+                            });
+                            if (!captureRes.ok) {
+                              alert(t('coffee.paymentFailed'));
+                              return;
+                            }
+                            alert(t('coffee.thankYou'));
+                            window.location.reload();
+                          },
+                          onError: () => {
+                            alert(t('coffee.paymentFailed'));
+                          },
+                        }).render('#paypal-button-container');
+                      }
+                    };
+                    document.body.appendChild(script);
+                  } else {
+                    alert(t('coffee.notConfigured'));
+                  }
+                } catch {
+                  alert(t('coffee.notConfigured'));
+                }
+              }}
+            >
+              {t('coffee.buy')} €2
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Stats Widgets Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Bytes */}

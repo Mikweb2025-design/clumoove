@@ -94,10 +94,12 @@ type User struct {
 	TotpEnabled        bool           `json:"totp_enabled"`
 	TotpSecretEnc      string         `json:"-"`
 	TotpBackupCodes    StringArray    `json:"-"`
-	TotpFailedAttempts int            `json:"-"`
-	TotpLockedUntil    sql.NullTime   `json:"-"`
-	LoginFailedAttempts int           `json:"-"`
-	LoginLockedUntil   sql.NullTime   `json:"-"`
+	TotpFailedAttempts  int            `json:"-"`
+	TotpLockedUntil     sql.NullTime   `json:"-"`
+	LoginFailedAttempts int            `json:"-"`
+	LoginLockedUntil    sql.NullTime   `json:"-"`
+	CoffeePaid          bool           `json:"coffee_paid"`
+	TotalBytesTransferred int64        `json:"total_bytes_transferred"`
 }
 
 // AuditAction enumerates the canonical audit-log event types.
@@ -515,6 +517,16 @@ func InitDB(connStr string) (*sql.DB, error) {
 		_, err = db.Exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE`)
 		if err != nil {
 			log.Printf("Failed schema migration (must_change_password): %v\n", err)
+		}
+
+		_, err = db.Exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS coffee_paid BOOLEAN NOT NULL DEFAULT FALSE`)
+		if err != nil {
+			log.Printf("Failed schema migration (coffee_paid): %v\n", err)
+		}
+
+		_, err = db.Exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS total_bytes_transferred BIGINT NOT NULL DEFAULT 0`)
+		if err != nil {
+			log.Printf("Failed schema migration (total_bytes_transferred): %v\n", err)
 		}
 
 		// Audit Log table
@@ -972,6 +984,14 @@ func IncrementMigrationProgress(db *sql.DB, ctx context.Context, id string, file
 						Target: id,
 						Details: json.RawMessage(fmt.Sprintf(`{"phase":"transfer","all_failed":%t,"partial":%t}`, failed == total, failed > 0 && failed < total)),
 					})
+					// Increment the user's lifetime transferred bytes so the free-tier
+					// check can enforce the quota across all migrations.
+					if finalStatus != "FAILED" {
+						var totalBytes int64
+						if err := tx.QueryRow(`SELECT total_bytes FROM migrations WHERE id = $1`, id).Scan(&totalBytes); err == nil && totalBytes > 0 {
+							AddUserTransferredBytes(tx, owner, totalBytes)
+						}
+					}
 				}
 			}
 		}
@@ -1121,6 +1141,12 @@ func ReconcileMigrationProgress(dbsql *sql.DB, migrationID string) error {
 					Target: migrationID,
 					Details: json.RawMessage(fmt.Sprintf(`{"phase":"transfer","reconciled":true,"all_failed":%t,"partial":%t}`, newFailed == newTotal, newFailed > 0 && newFailed < newTotal)),
 				})
+				if finalStatus != "FAILED" {
+					var totalBytes int64
+					if err := tx.QueryRow(`SELECT total_bytes FROM migrations WHERE id = $1`, migrationID).Scan(&totalBytes); err == nil && totalBytes > 0 {
+						AddUserTransferredBytes(tx, owner, totalBytes)
+					}
+				}
 			}
 		}
 	}
@@ -1479,7 +1505,7 @@ func GetUserByID(db *sql.DB, id string) (*User, error) {
 	query := `
 		SELECT id, email, password_hash, display_name, role, active, must_change_password, avatar, avatar_mime, created_at, updated_at,
 			totp_enabled, totp_secret_encrypted, totp_backup_codes, totp_failed_attempts, totp_locked_until,
-			login_failed_attempts, login_locked_until
+			login_failed_attempts, login_locked_until, coffee_paid, total_bytes_transferred
 		FROM users WHERE id = $1
 	`
 	var u User
@@ -1487,13 +1513,23 @@ func GetUserByID(db *sql.DB, id string) (*User, error) {
 	var secret sql.NullString
 	err := db.QueryRow(query, id).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.DisplayName, &u.Role, &u.Active, &u.MustChangePassword, &u.Avatar, &mime, &u.CreatedAt, &u.UpdatedAt,
 		&u.TotpEnabled, &secret, &u.TotpBackupCodes, &u.TotpFailedAttempts, &u.TotpLockedUntil,
-		&u.LoginFailedAttempts, &u.LoginLockedUntil)
+		&u.LoginFailedAttempts, &u.LoginLockedUntil, &u.CoffeePaid, &u.TotalBytesTransferred)
 	if err != nil {
 		return nil, err
 	}
 	u.AvatarMime = mime.String
 	u.TotpSecretEnc = secret.String
 	return &u, nil
+}
+
+func SetUserCoffeePaid(db *sql.DB, userID string) error {
+	_, err := db.Exec(`UPDATE users SET coffee_paid = TRUE WHERE id = $1`, userID)
+	return err
+}
+
+func AddUserTransferredBytes(database queryExecer, userID string, bytes int64) error {
+	_, err := database.Exec(`UPDATE users SET total_bytes_transferred = total_bytes_transferred + $1 WHERE id = $2`, bytes, userID)
+	return err
 }
 
 // SetUserTOTPSecret stores the encrypted TOTP secret and resets 2FA state

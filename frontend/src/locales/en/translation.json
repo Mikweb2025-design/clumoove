@@ -619,6 +619,23 @@
         "2FA_ENABLED": "2FA enabled",
         "2FA_DISABLED": "2FA disabled"
       }
+    },
+    "system": {
+      "paypalTitle": "Buy me a Coffee — PayPal",
+      "paypalClientId": "PayPal Client ID",
+      "paypalClientSecret": "PayPal Client Secret",
+      "coffeePrice": "Coffee Price",
+      "freeTransferGB": "Free Tier GB",
+      "paypalSaved": "PayPal settings saved"
     }
+  },
+  "coffee": {
+    "title": "☕ Buy me a coffee",
+    "description": "You are on the free tier. Support the project with €2 and get lifetime unlimited transfers.",
+    "usage": "Used {{used}} of your free tier",
+    "buy": "Buy coffee",
+    "paymentFailed": "Payment failed. Please try again.",
+    "thankYou": "Thank you! ☕ Enjoy unlimited transfers!",
+    "notConfigured": "PayPal is not configured yet."
   }
 }
