@@ -3770,6 +3770,17 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 			resp["coffee_paid"] = user.CoffeePaid
 			resp["total_bytes_transferred"] = user.TotalBytesTransferred
 		}
+	} else if authHeader := r.Header.Get("Authorization"); authHeader != "" {
+		parts := strings.Split(authHeader, " ")
+		if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+			if claims, err := auth.ValidateToken(parts[1], s.jwtSecret); err == nil {
+				user, err := db.GetUserByID(s.db, claims.UserID)
+				if err == nil {
+					resp["coffee_paid"] = user.CoffeePaid
+					resp["total_bytes_transferred"] = user.TotalBytesTransferred
+				}
+			}
+		}
 	}
 
 	writeJSON(w, http.StatusOK, resp)

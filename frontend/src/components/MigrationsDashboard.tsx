@@ -25,6 +25,8 @@ export function MigrationsDashboard({
   const [error, setError] = useState<string>('');
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [freeTransferGB, setFreeTransferGB] = useState(100);
+  const [usageBytes, setUsageBytes] = useState(0);
+  const [coffeePaid, setCoffeePaid] = useState(false);
 
   const { t } = useTranslation();
   const { formatBytes, formatDateTime } = useFormat();
@@ -150,15 +152,26 @@ export function MigrationsDashboard({
     };
   }, [apiUrl, token, t]);
 
-  // Fetch free tier limit
+  // Fetch settings + user usage data, refresh every 15s
   useEffect(() => {
-    fetch(`${apiUrl}/api/settings`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.free_transfer_gb) setFreeTransferGB(parseInt(data.free_transfer_gb, 10) || 100);
-      })
-      .catch(() => {});
-  }, [apiUrl]);
+    let cancelled = false;
+    const fetchUsage = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/settings`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!cancelled) {
+          if (data.free_transfer_gb) setFreeTransferGB(parseInt(data.free_transfer_gb, 10) || 100);
+          if (typeof data.coffee_paid === 'boolean') setCoffeePaid(data.coffee_paid);
+          if (typeof data.total_bytes_transferred === 'number') setUsageBytes(data.total_bytes_transferred);
+        }
+      } catch { /* ignore */ }
+    };
+    fetchUsage();
+    const interval = setInterval(fetchUsage, 15000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [apiUrl, token]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Avoid triggering row selection click
@@ -296,8 +309,8 @@ export function MigrationsDashboard({
         </div>
       </div>
 
-      {/* Coffee / Free Tier Banner */}
-      {user && !user.coffee_paid && (
+      {/* Coffee / Free Tier Banner — only when limit is reached */}
+      {user && !coffeePaid && usageBytes >= freeTransferGB * 1_073_741_824 && (
         <div className="relative rounded-2xl p-5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/70 text-amber-900 shadow-sm overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(255,200,50,0.12),transparent_60%)] pointer-events-none" />
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -308,22 +321,6 @@ export function MigrationsDashboard({
                 <p className="text-xs text-amber-700/80 leading-relaxed max-w-lg">
                   {t('coffee.description')}
                 </p>
-                {typeof user.total_bytes_transferred === 'number' && (
-                  <div className="space-y-1">
-                    <div className="w-full max-w-md h-2.5 bg-amber-200/60 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500"
-                        style={{ width: `${Math.min((user.total_bytes_transferred / (freeTransferGB * 1_073_741_824)) * 100, 100)}%` }}
-                      />
-                    </div>
-                    <p className="text-[10px] font-mono text-amber-600/70">
-                      {t('coffee.usage', { used: formatBytes(user.total_bytes_transferred), total: formatBytes(freeTransferGB * 1_073_741_824) })}
-                      {user.total_bytes_transferred >= freeTransferGB * 1_073_741_824 && (
-                        <span className="text-red-600 font-bold ml-1">— {t('coffee.limitReached')}</span>
-                      )}
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
             <button
@@ -331,7 +328,9 @@ export function MigrationsDashboard({
               className="shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-orange-500 hover:to-amber-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all shadow-sm hover:shadow-md cursor-pointer whitespace-nowrap"
               onClick={async () => {
                 try {
-                  const res = await fetch(`${apiUrl}/api/settings`);
+        const res = await fetch(`${apiUrl}/api/settings`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
                   const settings = await res.json();
                   if (settings.paypal_email) {
                     const link = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(settings.paypal_email)}&item_name=Buy+me+a+coffee+-+Clumoove&currency_code=EUR&amount=${encodeURIComponent(settings.coffee_price || '2.00')}`;
@@ -379,6 +378,26 @@ export function MigrationsDashboard({
             >
               Test payment
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Free tier usage bar — shown for non-paying users before limit */}
+      {user && !coffeePaid && usageBytes < freeTransferGB * 1_073_741_824 && (
+        <div className="p-4 rounded-2xl bg-[var(--color-bg-tertiary)]/30 border border-[var(--color-border)]/50 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-mono text-[var(--color-text-muted)] uppercase tracking-wider">
+              {t('coffee.freeTier')}
+            </span>
+            <span className="text-[10px] font-mono text-[var(--color-text-muted)]">
+              {t('coffee.usage', { used: formatBytes(usageBytes), total: formatBytes(freeTransferGB * 1_073_741_824) })}
+            </span>
+          </div>
+          <div className="w-full h-2 bg-[var(--color-bg-secondary)] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-amber-400 transition-all duration-500"
+              style={{ width: `${Math.min((usageBytes / (freeTransferGB * 1_073_741_824)) * 100, 100)}%` }}
+            />
           </div>
         </div>
       )}

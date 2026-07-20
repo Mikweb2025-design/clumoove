@@ -635,6 +635,7 @@
     "title": "☕ Buy me a coffee",
     "description": "100 GB transfer for free. Support the project with €2 and get lifetime unlimited transfers.",
     "usage": "{{used}} / {{total}}",
+    "freeTier": "Free Tier",
     "limitReached": "Limit reached!",
     "buy": "Buy coffee",
     "paymentFailed": "Payment failed. Please try again.",

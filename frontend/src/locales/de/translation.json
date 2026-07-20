@@ -635,6 +635,7 @@
     "title": "☕ Kauf mir einen Kaffee",
     "description": "100 GB kostenlos übertragen. Unterstütze das Projekt mit €2 und erhalte lebenslang unbegrenzte Übertragungen.",
     "usage": "{{used}} / {{total}}",
+    "freeTier": "Kostenloses Kontingent",
     "limitReached": "Limit erreicht!",
     "buy": "Kaffee kaufen",
     "paymentFailed": "Zahlung fehlgeschlagen. Bitte versuche es erneut.",
