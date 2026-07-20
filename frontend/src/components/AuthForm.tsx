@@ -21,7 +21,6 @@ export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [registrationsEnabled, setRegistrationsEnabled] = useState<boolean>(true);
   const [passwordResetAvailable, setPasswordResetAvailable] = useState<boolean>(false);
   const [forgotMode, setForgotMode] = useState<boolean>(false);
   const [resetEmailSent, setResetEmailSent] = useState<boolean>(false);
@@ -34,22 +33,6 @@ export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps
   const [newPassword, setNewPassword] = useState<string>('');
   const [confirmNewPassword, setConfirmNewPassword] = useState<string>('');
   const [mustChangeError, setMustChangeError] = useState<string>('');
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`${apiUrl}/api/settings`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return;
-        if (data && data.registrations_enabled === 'false') {
-          setRegistrationsEnabled(false);
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to fetch settings:', err);
-      });
-    return () => { cancelled = true; };
-  }, [apiUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -685,13 +668,12 @@ export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps
                   if (settings.paypal_email) {
                     const link = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(settings.paypal_email)}&item_name=Buy+me+a+coffee+-+Clumoove&currency_code=EUR&amount=${encodeURIComponent(settings.coffee_price || '2.00')}`;
                     window.open(link, '_blank');
-                    setSuccessMessage(t('coffee.afterPay'));
-                  } else {
-                    alert(t('coffee.notConfigured'));
                   }
-                } catch {
-                  alert(t('coffee.notConfigured'));
-                }
+                } catch { /* ignore */ }
+                onGoToConnect?.();
+                setError('');
+                setSuccessMessage(t('coffee.registerToActivate'));
+                setIsLogin(false);
               }}
             >
               €2 {t('coffee.buy')}
@@ -703,9 +685,7 @@ export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps
                 onGoToConnect?.();
                 setError('');
                 setSuccessMessage(t('coffee.registerToActivate'));
-                if (isLogin && registrationsEnabled) {
-                  setIsLogin(false);
-                }
+                setIsLogin(false);
               }}
             >
               Test
