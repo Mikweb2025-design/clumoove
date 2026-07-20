@@ -633,7 +633,7 @@
   },
   "coffee": {
     "title": "☕ Kauf mir einen Kaffee",
-    "description": "100 GB kostenlos übertragen. Unterstütze das Projekt mit €2 und erhalte lebenslang unbegrenzte Übertragungen.",
+    "description": "100 GB kostenlos übertragen. Unterstütze das Projekt mit €2.",
     "usage": "{{used}} / {{total}}",
     "freeTier": "Kostenloses Kontingent",
     "limitReached": "Limit erreicht!",

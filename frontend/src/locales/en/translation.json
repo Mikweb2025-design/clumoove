@@ -633,7 +633,7 @@
   },
   "coffee": {
     "title": "☕ Buy me a coffee",
-    "description": "100 GB transfer for free. Support the project with €2 and get lifetime unlimited transfers.",
+    "description": "100 GB transfer for free. Support the project with €2.",
     "usage": "{{used}} / {{total}}",
     "freeTier": "Free Tier",
     "limitReached": "Limit reached!",
