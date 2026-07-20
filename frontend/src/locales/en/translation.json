@@ -628,21 +628,69 @@
       "freeTransferGB": "Free Tier GB",
       "paypalSaved": "PayPal settings saved",
       "coffeeRequired": "Require Coffee Payment",
-      "coffeeRequiredHint": "When ON, free users are limited to the Free Tier GB. Disable to allow unlimited transfers for all registered users."
+      "coffeeRequiredHint": "When ON, free users are limited to the Free Tier GB. Disable to allow 100 GB free transfer for all registered users."
+    }
+  },
+  "landing": {
+    "hero": {
+      "title": "Cloud data migration — fast, secure, no permanent storage",
+      "subtitle": "Transfer your files from one cloud provider to another in an encrypted stream. Your data never stays on our servers — it moves directly through memory.",
+      "ctaStart": "Get started free",
+      "ctaCoffee": "☕ Support with €2",
+      "madeIn": "Made in Germany",
+      "secure": "Secure Transfer"
+    },
+    "how": {
+      "title": "How it works",
+      "step1": {
+        "title": "Connect your providers",
+        "desc": "Link your source and target cloud accounts in seconds. We support all major providers."
+      },
+      "step2": {
+        "title": "Encrypted in-memory transfer",
+        "desc": "Your data is streamed through encrypted memory buffers — never written to disk on our infrastructure."
+      },
+      "step3": {
+        "title": "No data stored",
+        "desc": "Once the transfer completes, every byte is purged. We hold nothing permanently."
+      }
+    },
+    "why": {
+      "title": "Why Clumoove",
+      "feature1": {
+        "title": "100 GB with coffee",
+        "desc": "100 GB free transfer — only with a €2 coffee."
+      },
+      "feature2": {
+        "title": "Made in Germany",
+        "desc": "Hosted and developed in Germany. Fully GDPR-compliant."
+      },
+      "feature3": {
+        "title": "Secure Temporary Storage",
+        "desc": "Data is processed in memory, encrypted end-to-end, never stored permanently."
+      },
+      "feature4": {
+        "title": "Fast transfers",
+        "desc": "Optimized infrastructure for large volumes of data with parallel streaming."
+      }
+    },
+    "coffee": {
+      "title": "☕ Support the project",
+      "desc": "100 GB free transfer — with a €2 coffee."
     }
   },
   "coffee": {
     "title": "☕ Buy me a coffee",
-    "description": "100 GB transfer for free. Support the project with €2.",
+    "description": "100 GB transfer with a €2 coffee. Support the project with €2.",
     "usage": "{{used}} / {{total}}",
     "freeTier": "Free Tier",
     "limitReached": "Limit reached!",
     "buy": "Buy coffee",
     "paymentFailed": "Payment failed. Please try again.",
-    "thankYou": "Thank you! ☕ Enjoy unlimited transfers!",
+    "thankYou": "Thank you! ☕ Enjoy 100 GB free transfer!",
     "notConfigured": "PayPal is not configured yet.",
     "paypalConfirm": "Have you completed your payment via PayPal? Click OK to verify.",
-    "afterPay": "Payment link opened! Register or log in after paying to activate unlimited transfers.",
-    "registerToActivate": "100 GB free. Thank you for your donation! One more step for the transfer: register here."
+    "afterPay": "Payment link opened! Register or log in after paying to activate 100 GB free transfer.",
+    "registerToActivate": "100 GB with your coffee. Thank you! One more step for the transfer: register here."
   }
 }

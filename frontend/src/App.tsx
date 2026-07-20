@@ -3,6 +3,7 @@ import { ConnectForm } from './components/ConnectForm';
 import { FileBrowser } from './components/FileBrowser';
 import { Dashboard } from './components/Dashboard';
 import { AuthForm } from './components/AuthForm';
+import { LandingPage } from './components/LandingPage';
 import { MigrationsDashboard } from './components/MigrationsDashboard';
 import { ResetPasswordForm } from './components/ResetPasswordForm';
 import { ConfirmEmailChangeForm } from './components/ConfirmEmailChangeForm';
@@ -14,10 +15,11 @@ import { TermsPage } from './components/TermsPage';
 import { CloudSync, LogOut, User as UserIcon, Settings as SettingsIcon, Shield } from 'lucide-react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { NetworkMapBackground } from './components/landing/NetworkMapBackground';
 import type { User, MigrationConfig, CloudFile } from './types';
 import { listenForOAuthMessage } from './utils/oauth';
 
-type Step = 'login' | 'history' | 'connect' | 'select' | 'dashboard' | 'settings' | 'admin' | 'privacy' | 'terms' | 'reset-password' | 'confirm-email';
+type Step = 'landing' | 'login' | 'history' | 'connect' | 'select' | 'dashboard' | 'settings' | 'admin' | 'privacy' | 'terms' | 'reset-password' | 'confirm-email';
 
 const getApiUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
@@ -58,7 +60,7 @@ function App() {
     ? new URLSearchParams(window.location.search).get('email-change-token')
     : null;
 
-  const initialStep: Step = emailChangeTokenFromUrl ? 'confirm-email' : resetTokenFromUrl ? 'reset-password' : 'login';
+  const initialStep: Step = emailChangeTokenFromUrl ? 'confirm-email' : resetTokenFromUrl ? 'reset-password' : 'landing';
   const [step, setStep] = useState<Step>(initialStep);
   const [token, setToken] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
@@ -492,435 +494,7 @@ function App() {
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] flex flex-col font-sans selection:bg-portal-orange selection:text-white relative overflow-x-hidden">
 
-      {/* Full-screen Europa background with servers & data flow */}
-      <style>{`
-        @keyframes orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes pulse-dot { 0%,100% { opacity:0.3; r:3; } 50% { opacity:1; r:6; } }
-        @keyframes data-flow { to { stroke-dashoffset: -200; } }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-        @keyframes fly-right { 0% { transform: translateX(-100px) scale(0.5); opacity:0; } 10% { opacity:1; } 90% { opacity:1; } 100% { transform: translateX(1600px) scale(0.8); opacity:0; } }
-        @keyframes fly-right2 { 0% { transform: translateX(-100px) scale(0.4); opacity:0; } 10% { opacity:0.8; } 90% { opacity:0.8; } 100% { transform: translateX(1600px) scale(0.6); opacity:0; } }
-        @keyframes fly-right3 { 0% { transform: translateX(-100px) scale(0.6); opacity:0; } 10% { opacity:0.9; } 90% { opacity:0.9; } 100% { transform: translateX(1600px) scale(0.7); opacity:0; } }
-        @keyframes fly-left { 0% { transform: translateX(1600px) scale(0.5); opacity:0; } 10% { opacity:1; } 90% { opacity:1; } 100% { transform: translateX(-100px) scale(0.8); opacity:0; } }
-        @keyframes fly-left2 { 0% { transform: translateX(1600px) scale(0.4); opacity:0; } 10% { opacity:0.8; } 90% { opacity:0.8; } 100% { transform: translateX(-100px) scale(0.6); opacity:0; } }
-        @keyframes fly-up { 0% { transform: translateY(900px) scale(0.4); opacity:0; } 10% { opacity:0.8; } 90% { opacity:0.8; } 100% { transform: translateY(-100px) scale(0.6); opacity:0; } }
-        @keyframes fly-down { 0% { transform: translateY(-100px) scale(0.6); opacity:0; } 10% { opacity:0.9; } 90% { opacity:0.9; } 100% { transform: translateY(900px) scale(0.7); opacity:0; } }
-      `}</style>
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <svg viewBox="0 0 1440 900" xmlns="http://www.w3.org/2000/svg" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <radialGradient id="glow-blue" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.12" />
-              <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="glow-yellow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ffd700" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#ffd700" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="server-pulse" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ffd700" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#ffd700" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-
-          {/* Ambient glows */}
-          <circle cx="200" cy="200" r="300" fill="url(#glow-blue)" />
-          <circle cx="1200" cy="700" r="350" fill="url(#glow-blue)" />
-          <circle cx="720" cy="100" r="280" fill="url(#glow-yellow)" />
-          <circle cx="720" cy="800" r="280" fill="url(#glow-yellow)" />
-
-          {/* Europa landmass (simplified, full map) */}
-          <g opacity="0.08" fill="#1e3a8a">
-            <path d="M520 150 Q540 130 570 125 Q600 120 630 130 Q660 140 680 150 Q700 160 720 170 Q740 180 750 200 Q760 220 755 240 Q750 260 740 280 Q730 300 710 310 Q690 320 670 325 Q650 330 630 335 Q610 340 590 345 Q570 350 550 360 Q530 370 510 380 Q490 390 480 410 Q470 430 465 450 Q460 470 455 490 Q450 510 440 525 Q430 540 420 550 Q410 560 400 565 Q390 570 380 560 Q370 550 365 530 Q360 510 358 490 Q355 470 360 450 Q365 430 375 410 Q385 390 400 370 Q415 350 430 335 Q445 320 460 305 Q475 290 490 270 Q505 250 515 230 Q525 210 525 190 Q525 170 520 150Z" />
-            <path d="M570 125 Q580 110 600 100 Q620 90 640 95 Q660 100 670 115 Q680 130 685 145 Q690 160 680 170 Q670 180 655 185 Q640 190 625 185 Q610 180 600 165 Q590 150 580 140 Q570 130 570 125Z" />
-            <path d="M750 200 Q770 190 790 195 Q810 200 820 220 Q830 240 825 260 Q820 280 810 295 Q800 310 780 315 Q760 320 750 310 Q740 300 745 280 Q750 260 750 240 Q750 220 750 200Z" />
-            <path d="M520 40 Q540 30 560 35 Q580 40 590 60 Q600 80 595 100 Q590 120 580 130 Q570 140 555 135 Q540 130 535 110 Q530 90 528 70 Q526 50 520 40Z" opacity="0.7" />
-            <path d="M590 35 Q610 25 630 30 Q650 35 655 55 Q660 75 655 90 Q650 105 640 115 Q630 125 615 120 Q600 115 595 95 Q590 75 592 55 Q594 35 590 35Z" opacity="0.6" />
-            <path d="M450 150 Q460 140 475 145 Q490 150 495 170 Q500 190 495 210 Q490 230 480 240 Q470 250 460 245 Q450 240 448 220 Q445 200 448 180 Q450 160 450 150Z" opacity="0.75" />
-            <path d="M420 370 Q435 360 455 365 Q475 370 480 390 Q485 410 478 430 Q470 450 455 460 Q440 470 425 465 Q410 460 405 440 Q400 420 405 400 Q410 380 420 370Z" opacity="0.75" />
-            <path d="M590 345 Q600 340 610 345 Q620 350 625 370 Q630 390 632 410 Q635 430 632 450 Q630 470 620 480 Q610 490 600 485 Q590 480 588 460 Q585 440 585 420 Q585 400 587 380 Q590 360 590 345Z" opacity="0.75" />
-            <path d="M650 325 Q670 320 690 330 Q710 340 720 360 Q730 380 728 400 Q725 420 715 435 Q705 450 690 455 Q675 460 660 455 Q645 450 640 430 Q635 410 638 390 Q640 370 645 350 Q650 330 650 325Z" opacity="0.7" />
-            <path d="M680 170 Q710 160 740 165 Q770 170 790 190 Q810 210 815 240 Q820 270 810 300 Q800 330 780 345 Q760 360 735 355 Q710 350 695 335 Q680 320 675 300 Q670 280 670 260 Q670 240 672 220 Q675 200 680 180Z" opacity="0.65" />
-          </g>
-
-          {/* Server/Data Centre markers with pulsing animation */}
-          <g>
-            <circle cx="485" cy="200" r="18" fill="url(#server-pulse)">
-              <animate attributeName="r" values="12;22;12" dur="2s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="485" cy="200" r="4" fill="#ffd700">
-              <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite" />
-            </circle>
-            <text x="475" y="188" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">LON</text>
-
-            <circle cx="600" cy="130" r="18" fill="url(#server-pulse)">
-              <animate attributeName="r" values="12;22;12" dur="2.5s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="600" cy="130" r="4" fill="#ffd700">
-              <animate attributeName="r" values="3;6;3" dur="2.5s" repeatCount="indefinite" />
-            </circle>
-            <text x="590" y="118" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">AMS</text>
-
-            <circle cx="700" cy="170" r="18" fill="url(#server-pulse)">
-              <animate attributeName="r" values="12;22;12" dur="1.8s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="700" cy="170" r="4" fill="#ffd700">
-              <animate attributeName="r" values="3;6;3" dur="1.8s" repeatCount="indefinite" />
-            </circle>
-            <text x="690" y="158" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">FRA</text>
-
-            <circle cx="750" cy="270" r="18" fill="url(#server-pulse)">
-              <animate attributeName="r" values="12;22;12" dur="3s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="750" cy="270" r="4" fill="#ffd700">
-              <animate attributeName="r" values="3;6;3" dur="3s" repeatCount="indefinite" />
-            </circle>
-            <text x="740" y="258" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">FRA2</text>
-
-            <circle cx="600" cy="330" r="18" fill="url(#server-pulse)">
-              <animate attributeName="r" values="12;22;12" dur="2.2s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="600" cy="330" r="4" fill="#ffd700">
-              <animate attributeName="r" values="3;6;3" dur="2.2s" repeatCount="indefinite" />
-            </circle>
-            <text x="590" y="318" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">MIL</text>
-
-            <circle cx="440" cy="430" r="18" fill="url(#server-pulse)">
-              <animate attributeName="r" values="12;22;12" dur="2.7s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="440" cy="430" r="4" fill="#ffd700">
-              <animate attributeName="r" values="3;6;3" dur="2.7s" repeatCount="indefinite" />
-            </circle>
-            <text x="430" y="418" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">MAD</text>
-
-            <circle cx="695" cy="370" r="18" fill="url(#server-pulse)">
-              <animate attributeName="r" values="12;22;12" dur="2s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="695" cy="370" r="4" fill="#ffd700">
-              <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite" />
-            </circle>
-            <text x="685" y="358" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">VIE</text>
-
-            <circle cx="790" cy="310" r="18" fill="url(#server-pulse)">
-              <animate attributeName="r" values="12;22;12" dur="2.8s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="790" cy="310" r="4" fill="#ffd700">
-              <animate attributeName="r" values="3;6;3" dur="2.8s" repeatCount="indefinite" />
-            </circle>
-            <text x="780" y="298" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">WAW</text>
-
-            <circle cx="540" cy="90" r="18" fill="url(#server-pulse)">
-              <animate attributeName="r" values="12;22;12" dur="2.3s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="540" cy="90" r="4" fill="#ffd700">
-              <animate attributeName="r" values="3;6;3" dur="2.3s" repeatCount="indefinite" />
-            </circle>
-            <text x="530" y="78" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">CPH</text>
-
-            <circle cx="650" cy="260" r="18" fill="url(#server-pulse)">
-              <animate attributeName="r" values="12;22;12" dur="1.9s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="650" cy="260" r="4" fill="#ffd700">
-              <animate attributeName="r" values="3;6;3" dur="1.9s" repeatCount="indefinite" />
-            </circle>
-            <text x="640" y="248" fontSize="10" fill="#ffd700" fontWeight="bold" fontFamily="monospace">ZRH</text>
-
-            {/* Extra data flow server markers */}
-            <circle cx="800" cy="150" r="12" fill="url(#server-pulse)">
-              <animate attributeName="r" values="8;16;8" dur="3.2s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="800" cy="150" r="3" fill="#ffd700">
-              <animate attributeName="r" values="2;5;2" dur="3.2s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="500" cy="300" r="12" fill="url(#server-pulse)">
-              <animate attributeName="r" values="8;16;8" dur="2.6s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="500" cy="300" r="3" fill="#ffd700">
-              <animate attributeName="r" values="2;5;2" dur="2.6s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="680" cy="450" r="12" fill="url(#server-pulse)">
-              <animate attributeName="r" values="8;16;8" dur="3.5s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="680" cy="450" r="3" fill="#ffd700">
-              <animate attributeName="r" values="2;5;2" dur="3.5s" repeatCount="indefinite" />
-            </circle>
-          </g>
-
-          {/* Data flow lines with animated dash offset */}
-          <g opacity="0.15">
-            <line x1="485" y1="200" x2="600" y2="130" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3s" repeatCount="indefinite" />
-            </line>
-            <line x1="600" y1="130" x2="700" y2="170" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="2.5s" repeatCount="indefinite" />
-            </line>
-            <line x1="700" y1="170" x2="750" y2="270" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="4s" repeatCount="indefinite" />
-            </line>
-            <line x1="600" y1="330" x2="695" y2="370" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3.5s" repeatCount="indefinite" />
-            </line>
-            <line x1="650" y1="260" x2="600" y2="330" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="2.8s" repeatCount="indefinite" />
-            </line>
-            <line x1="750" y1="270" x2="695" y2="370" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3.2s" repeatCount="indefinite" />
-            </line>
-            <line x1="750" y1="270" x2="790" y2="310" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="2.2s" repeatCount="indefinite" />
-            </line>
-            <line x1="440" y1="430" x2="600" y2="330" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="4.5s" repeatCount="indefinite" />
-            </line>
-            <line x1="700" y1="170" x2="790" y2="310" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3.8s" repeatCount="indefinite" />
-            </line>
-            <line x1="600" y1="130" x2="540" y2="90" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="2s" repeatCount="indefinite" />
-            </line>
-            <line x1="650" y1="260" x2="700" y2="170" stroke="url(#glow-yellow)" strokeWidth="2" strokeDasharray="8,6">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3s" repeatCount="indefinite" />
-            </line>
-            <line x1="800" y1="150" x2="700" y2="170" stroke="url(#glow-yellow)" strokeWidth="1.5" strokeDasharray="6,8">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="3.3s" repeatCount="indefinite" />
-            </line>
-            <line x1="500" y1="300" x2="600" y2="330" stroke="url(#glow-yellow)" strokeWidth="1.5" strokeDasharray="6,8">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="2.7s" repeatCount="indefinite" />
-            </line>
-            <line x1="680" y1="450" x2="600" y2="330" stroke="url(#glow-yellow)" strokeWidth="1.5" strokeDasharray="6,8">
-              <animate attributeName="stroke-dashoffset" from="0" to="-200" dur="4.2s" repeatCount="indefinite" />
-            </line>
-          </g>
-
-          {/* Professional tech infrastructure icons */}
-          <g opacity="0.12" fill="none" stroke="#ffd700" strokeWidth="1.5">
-            {/* Database cluster */}
-            <g transform="translate(160,260)">
-              <ellipse cx="0" cy="-6" rx="8" ry="3" />
-              <path d="M-8,-6 L-8,6 Q-8,9 0,9 Q8,9 8,6 L8,-6" />
-              <path d="M-8,-2 Q-8,1 0,1 Q8,1 8,-2" strokeWidth="1" />
-              <circle cx="-3" cy="4" r="1" fill="#ffd700" stroke="none" />
-              <circle cx="0" cy="4" r="1" fill="#ffd700" stroke="none" />
-              <circle cx="3" cy="4" r="1" fill="#ffd700" stroke="none" />
-            </g>
-            <g transform="translate(1080,200)">
-              <ellipse cx="0" cy="-6" rx="8" ry="3" />
-              <path d="M-8,-6 L-8,6 Q-8,9 0,9 Q8,9 8,6 L8,-6" />
-              <path d="M-8,-2 Q-8,1 0,1 Q8,1 8,-2" strokeWidth="1" />
-              <circle cx="-3" cy="4" r="1" fill="#ffd700" stroke="none" />
-              <circle cx="0" cy="4" r="1" fill="#ffd700" stroke="none" />
-              <circle cx="3" cy="4" r="1" fill="#ffd700" stroke="none" />
-            </g>
-
-            {/* Network switch / router */}
-            <g transform="translate(300,430)">
-              <rect x="-10" y="-6" width="20" height="12" rx="2" />
-              <circle cx="-5" cy="0" r="1.5" fill="#ffd700" stroke="none" />
-              <circle cx="0" cy="0" r="1.5" fill="#ffd700" stroke="none" />
-              <circle cx="5" cy="0" r="1.5" fill="#ffd700" stroke="none" />
-              <line x1="-3" y1="-3" x2="3" y2="-3" strokeWidth="1" />
-              <line x1="-3" y1="3" x2="3" y2="3" strokeWidth="1" />
-            </g>
-            <g transform="translate(1180,370)">
-              <rect x="-10" y="-6" width="20" height="12" rx="2" />
-              <circle cx="-5" cy="0" r="1.5" fill="#ffd700" stroke="none" />
-              <circle cx="0" cy="0" r="1.5" fill="#ffd700" stroke="none" />
-              <circle cx="5" cy="0" r="1.5" fill="#ffd700" stroke="none" />
-              <line x1="-3" y1="-3" x2="3" y2="-3" strokeWidth="1" />
-              <line x1="-3" y1="3" x2="3" y2="3" strokeWidth="1" />
-            </g>
-
-            {/* Cloud with arrows up/down (sync) */}
-            <g transform="translate(140,560)">
-              <path d="M-9,2 Q-9,-3 -5,-4 Q-4,-8 1,-8 Q6,-8 7,-4 Q10,-3 9,2 Q10,5 7,6 L-6,6 Q-10,5 -9,2Z" />
-              <path d="M-2,-14 L-2,-2" strokeWidth="1.5" />
-              <polygon points="-4,-12 -2,-15 0,-12" />
-              <path d="M5,-14 L5,-2" strokeWidth="1.5" />
-              <polygon points="3,-12 5,-15 7,-12" />
-            </g>
-            <g transform="translate(920,720)">
-              <path d="M-9,2 Q-9,-3 -5,-4 Q-4,-8 1,-8 Q6,-8 7,-4 Q10,-3 9,2 Q10,5 7,6 L-6,6 Q-10,5 -9,2Z" />
-              <path d="M-2,-14 L-2,-2" strokeWidth="1.5" />
-              <polygon points="-4,-12 -2,-15 0,-12" />
-              <path d="M5,-14 L5,-2" strokeWidth="1.5" />
-              <polygon points="3,-12 5,-15 7,-12" />
-            </g>
-            <g transform="translate(1240,120)">
-              <path d="M-9,2 Q-9,-3 -5,-4 Q-4,-8 1,-8 Q6,-8 7,-4 Q10,-3 9,2 Q10,5 7,6 L-6,6 Q-10,5 -9,2Z" />
-              <path d="M-2,-14 L-2,-2" strokeWidth="1.5" />
-              <polygon points="-4,-12 -2,-15 0,-12" />
-              <path d="M5,-14 L5,-2" strokeWidth="1.5" />
-              <polygon points="3,-12 5,-15 7,-12" />
-            </g>
-
-            {/* Server rack */}
-            <g transform="translate(100,160)">
-              <rect x="-7" y="-10" width="14" height="20" rx="1.5" />
-              <rect x="-5" y="-8" width="10" height="3" rx="0.5" fill="#ffd700" opacity="0.15" stroke="none" />
-              <rect x="-5" y="-3" width="10" height="3" rx="0.5" fill="#ffd700" opacity="0.15" stroke="none" />
-              <rect x="-5" y="2" width="10" height="3" rx="0.5" fill="#ffd700" opacity="0.15" stroke="none" />
-              <rect x="-5" y="7" width="10" height="3" rx="0.5" fill="#ffd700" opacity="0.15" stroke="none" />
-              <circle cx="4" cy="8.5" r="0.8" fill="#ffd700" stroke="none" />
-            </g>
-            <g transform="translate(1360,520)">
-              <rect x="-7" y="-10" width="14" height="20" rx="1.5" />
-              <rect x="-5" y="-8" width="10" height="3" rx="0.5" fill="#ffd700" opacity="0.15" stroke="none" />
-              <rect x="-5" y="-3" width="10" height="3" rx="0.5" fill="#ffd700" opacity="0.15" stroke="none" />
-              <rect x="-5" y="2" width="10" height="3" rx="0.5" fill="#ffd700" opacity="0.15" stroke="none" />
-              <rect x="-5" y="7" width="10" height="3" rx="0.5" fill="#ffd700" opacity="0.15" stroke="none" />
-              <circle cx="4" cy="8.5" r="0.8" fill="#ffd700" stroke="none" />
-            </g>
-
-            {/* Globe with network nodes */}
-            <g transform="translate(420,130)">
-              <circle cx="0" cy="0" r="9" />
-              <ellipse cx="0" cy="0" rx="4.5" ry="9" strokeWidth="1" />
-              <line x1="-9" y1="0" x2="9" y2="0" strokeWidth="1" />
-              <circle cx="-12" cy="-4" r="1.5" fill="#ffd700" stroke="none" />
-              <circle cx="12" cy="4" r="1.5" fill="#ffd700" stroke="none" />
-              <line x1="-12" y1="-4" x2="-3" y2="-1" strokeWidth="0.8" />
-              <line x1="12" y1="4" x2="3" y2="1" strokeWidth="0.8" />
-            </g>
-            <g transform="translate(1120,520)">
-              <circle cx="0" cy="0" r="9" />
-              <ellipse cx="0" cy="0" rx="4.5" ry="9" strokeWidth="1" />
-              <line x1="-9" y1="0" x2="9" y2="0" strokeWidth="1" />
-              <circle cx="-12" cy="-4" r="1.5" fill="#ffd700" stroke="none" />
-              <circle cx="12" cy="4" r="1.5" fill="#ffd700" stroke="none" />
-              <line x1="-12" y1="-4" x2="-3" y2="-1" strokeWidth="0.8" />
-              <line x1="12" y1="4" x2="3" y2="1" strokeWidth="0.8" />
-            </g>
-
-            {/* Shield / security */}
-            <g transform="translate(720,720)">
-              <path d="M-8,0 L-8,-8 L0,-11 L8,-8 L8,0 Q8,6 0,9 Q-8,6 -8,0Z" />
-              <polyline points="-4,-3 0,1 4,-4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </g>
-            <g transform="translate(50,410)">
-              <path d="M-8,0 L-8,-8 L0,-11 L8,-8 L8,0 Q8,6 0,9 Q-8,6 -8,0Z" />
-              <polyline points="-4,-3 0,1 4,-4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </g>
-
-            {/* Data flow node */}
-            <g transform="translate(350,770)">
-              <circle cx="0" cy="0" r="4" />
-              <path d="M-12,-6 Q-6,-10 0,-8 Q6,-6 12,-8" strokeWidth="1" />
-              <path d="M-12,6 Q-6,10 0,8 Q6,6 12,8" strokeWidth="1" />
-            </g>
-            <g transform="translate(1280,660)">
-              <circle cx="0" cy="0" r="4" />
-              <path d="M-12,-6 Q-6,-10 0,-8 Q6,-6 12,-8" strokeWidth="1" />
-              <path d="M-12,6 Q-6,10 0,8 Q6,6 12,8" strokeWidth="1" />
-            </g>
-          </g>
-
-          {/* Orbiting data packets */}
-          <g opacity="0.12">
-            <circle cx="540" cy="90" r="2" fill="#ffd700">
-              <animateMotion dur="8s" repeatCount="indefinite" path="M540,90 Q600,130 700,170 Q800,150 790,310 Q750,270 700,170 Q600,130 540,90" />
-            </circle>
-            <circle cx="750" cy="270" r="2" fill="#ffd700">
-              <animateMotion dur="10s" repeatCount="indefinite" path="M750,270 Q790,310 695,370 Q600,330 650,260 Q700,170 750,270" />
-            </circle>
-            <circle cx="600" cy="330" r="2" fill="#ffd700">
-              <animateMotion dur="12s" repeatCount="indefinite" path="M600,330 Q440,430 500,300 Q600,130 650,260 Q695,370 600,330" />
-            </circle>
-            <circle cx="700" cy="170" r="2" fill="#ffd700">
-              <animateMotion dur="9s" repeatCount="indefinite" path="M700,170 Q650,260 600,330 Q695,370 750,270 Q790,310 800,150 Q700,170" />
-            </circle>
-          </g>
-
-          {/* Flying file icons between servers — multi-directional migration traffic */}
-          <g>
-            {/* Document → right */}
-            <g style={{animation: 'fly-right 10s ease-in-out infinite'}} opacity="0.3">
-              <rect x="0" y="0" width="18" height="22" rx="2" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="5" y1="6" x2="13" y2="6" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="5" y1="10" x2="13" y2="10" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="5" y1="14" x2="11" y2="14" stroke="#ffd700" strokeWidth="1.5" />
-            </g>
-            {/* Video → right */}
-            <g style={{animation: 'fly-right2 12s ease-in-out infinite 2s'}} opacity="0.3">
-              <rect x="0" y="0" width="20" height="16" rx="2" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <polygon points="8,4 16,8 8,12" fill="#ffd700" opacity="0.5" />
-            </g>
-            {/* Table → right */}
-            <g style={{animation: 'fly-right3 14s ease-in-out infinite 4s'}} opacity="0.3">
-              <rect x="0" y="0" width="18" height="18" rx="2" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="0" y1="6" x2="18" y2="6" stroke="#ffd700" strokeWidth="1" />
-              <line x1="0" y1="12" x2="18" y2="12" stroke="#ffd700" strokeWidth="1" />
-              <line x1="6" y1="0" x2="6" y2="18" stroke="#ffd700" strokeWidth="1" />
-              <line x1="12" y1="0" x2="12" y2="18" stroke="#ffd700" strokeWidth="1" />
-            </g>
-            {/* Folder → right */}
-            <g style={{animation: 'fly-right 15s ease-in-out infinite 6s'}} opacity="0.3">
-              <path d="M0,18 L0,4 Q0,2 2,2 L7,2 L9,4 L18,4 Q20,4 20,6 L20,18 Q20,20 18,20 L2,20 Q0,20 0,18Z" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="4" y1="10" x2="16" y2="10" stroke="#ffd700" strokeWidth="1" />
-              <line x1="4" y1="14" x2="14" y2="14" stroke="#ffd700" strokeWidth="1" />
-            </g>
-            {/* Image → left */}
-            <g style={{animation: 'fly-left 11s ease-in-out infinite 1s'}} opacity="0.25">
-              <rect x="0" y="0" width="18" height="18" rx="2" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <circle cx="6" cy="6" r="3" fill="#ffd700" opacity="0.4" />
-              <polygon points="4,14 10,8 14,14" fill="none" stroke="#ffd700" strokeWidth="1" />
-            </g>
-            {/* Spreadsheet → left */}
-            <g style={{animation: 'fly-left2 13s ease-in-out infinite 3s'}} opacity="0.25">
-              <rect x="0" y="0" width="18" height="22" rx="2" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="3" y1="6" x2="15" y2="6" stroke="#ffd700" strokeWidth="1" />
-              <line x1="3" y1="10" x2="15" y2="10" stroke="#ffd700" strokeWidth="1" />
-              <line x1="3" y1="14" x2="15" y2="14" stroke="#ffd700" strokeWidth="1" />
-              <line x1="3" y1="18" x2="11" y2="18" stroke="#ffd700" strokeWidth="1" />
-              <rect x="9" y="0" width="1" height="22" fill="#ffd700" opacity="0.3" />
-            </g>
-            {/* Archive → up */}
-            <g style={{animation: 'fly-up 16s ease-in-out infinite 5s'}} opacity="0.2">
-              <rect x="0" y="0" width="20" height="16" rx="2" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <path d="M2,16 L2,6 Q2,4 4,4 L16,4 Q18,4 18,6 L18,16" fill="none" stroke="#ffd700" strokeWidth="1" />
-              <line x1="5" y1="10" x2="15" y2="10" stroke="#ffd700" strokeWidth="1" />
-            </g>
-            {/* Code file → down */}
-            <g style={{animation: 'fly-down 14s ease-in-out infinite 7s'}} opacity="0.2">
-              <rect x="0" y="0" width="18" height="22" rx="2" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <polyline points="5,8 8,11 5,14" fill="none" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              <polyline points="13,8 10,11 13,14" fill="none" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </g>
-            {/* Database → up */}
-            <g style={{animation: 'fly-up 18s ease-in-out infinite 2s'}} opacity="0.2">
-              <ellipse cx="9" cy="4" rx="8" ry="3" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <path d="M1,4 L1,14 Q1,17 9,17 Q17,17 17,14 L17,4" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <path d="M1,9 Q1,12 9,12 Q17,12 17,9" fill="none" stroke="#ffd700" strokeWidth="1" />
-            </g>
-            {/* Document → down */}
-            <g style={{animation: 'fly-down 12s ease-in-out infinite 4s'}} opacity="0.25">
-              <rect x="0" y="0" width="16" height="20" rx="2" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="4" y1="6" x2="12" y2="6" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="4" y1="10" x2="12" y2="10" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="4" y1="14" x2="10" y2="14" stroke="#ffd700" strokeWidth="1.5" />
-            </g>
-          </g>
-          {/* Additional right-bound migration traffic */}
-          <g>
-            <g style={{animation: 'fly-right2 11s ease-in-out infinite 8s'}} opacity="0.3">
-              <rect x="0" y="0" width="16" height="20" rx="2" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="4" y1="5" x2="12" y2="5" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="4" y1="9" x2="12" y2="9" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="4" y1="13" x2="10" y2="13" stroke="#ffd700" strokeWidth="1.5" />
-            </g>
-            {/* Video icon flying MAD→VIE */}
-            <g style={{animation: 'fly-right3 13s ease-in-out infinite 10s'}} opacity="0.3">
-              <rect x="0" y="0" width="18" height="14" rx="2" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <polygon points="7,3 14,7 7,11" fill="#ffd700" opacity="0.5" />
-            </g>
-            {/* Archive icon flying VIE→WAW */}
-            <g style={{animation: 'fly-right 16s ease-in-out infinite 12s'}} opacity="0.3">
-              <path d="M0,16 L0,3 Q0,1 2,1 L6,1 L8,3 L16,3 Q18,3 18,5 L18,16 Q18,18 16,18 L2,18 Q0,18 0,16Z" fill="none" stroke="#ffd700" strokeWidth="1.5" />
-              <line x1="3" y1="9" x2="15" y2="9" stroke="#ffd700" strokeWidth="1" />
-              <line x1="3" y1="13" x2="12" y2="13" stroke="#ffd700" strokeWidth="1" />
-            </g>
-          </g>
-        </svg>
-      </div>
+      <NetworkMapBackground />
 
       {/* Floating Glassmorphism Header */}
       <header className="sticky top-0 z-50 glass-panel border-b border-[var(--color-border)] backdrop-blur-lg shadow-sm transition-all duration-300">
@@ -937,6 +511,18 @@ function App() {
               Clumoove
             </span>
           </div>
+
+          {/* Landing Page Nav */}
+          {step === 'landing' && !user && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => replaceNav('login')}
+                className="text-[11px] font-bold font-mono uppercase tracking-wider text-[var(--color-portal-navy-themed)] border-2 border-[var(--color-portal-navy-themed)] px-5 py-1.5 rounded-xl hover:bg-[var(--color-portal-navy-themed)] hover:text-white transition-all duration-300 cursor-pointer"
+              >
+                {t('auth.login')}
+              </button>
+            </div>
+          )}
 
           {/* User Section in Header */}
           {user && (
@@ -1003,6 +589,16 @@ function App() {
       {/* Main Structural Body */}
       <main className="flex-grow flex flex-col justify-center px-6 py-8 max-w-5xl w-full mx-auto relative z-10 animate-slide-up">
         <div className="w-full">
+          {step === 'landing' && (
+            <LandingPage
+              onGetStarted={() => replaceNav('login')}
+              onBuyCoffee={() => {
+                setPendingPayment(true);
+                replaceNav('login');
+              }}
+            />
+          )}
+
           {step === 'login' && (
             <AuthForm apiUrl={API_URL} onAuthSuccess={handleAuthSuccess} onGoToConnect={() => setPendingPayment(true)} />
           )}
