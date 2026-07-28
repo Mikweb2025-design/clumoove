@@ -264,12 +264,30 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		needsSetup = false
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	result := map[string]interface{}{
 		"registrations_enabled": val,
 		"needs_setup":           needsSetup,
 		"local_storage_enabled": os.Getenv("LOCAL_STORAGE_ROOT") != "",
 		"oauth_providers":       oauth.ConfiguredProviders(),
-	})
+		"coffee_required":       coffeeRequired(),
+		"free_transfer_gb":      freeTransferGB(),
+		"paypal_configured":     isPayPalConfigured(),
+	}
+
+	// Try to extract user from optional Authorization header for coffee_paid
+	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+			if claims, err := auth.ValidateToken(parts[1], s.jwtSecret); err == nil && claims != nil {
+				paid, err := db.GetUserCoffeePaid(s.db, claims.UserID)
+				if err == nil {
+					result["coffee_paid"] = paid
+				}
+			}
+		}
+	}
+
+	writeJSON(w, http.StatusOK, result)
 }
 
 type UpdateSettingRequest struct {

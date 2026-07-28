@@ -46,7 +46,7 @@ services:
     container_name: migration-api
     restart: unless-stopped
     ports:
-      - "8001:8000"
+      - "8082:8000"
     environment:
       - DATABASE_URL=postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres-db:5432/cloud_migration_db?sslmode=disable
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis-queue:6379
@@ -117,7 +117,7 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - VITE_API_URL=http://localhost:8001
+      - VITE_API_URL=http://localhost:8082
       - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-}
     ulimits:
       nofile:

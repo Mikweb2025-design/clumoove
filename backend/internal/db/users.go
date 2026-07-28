@@ -512,3 +512,14 @@ func DeleteUserAvatar(db *sql.DB, id string) error {
 	_, err := db.Exec(`UPDATE users SET avatar = NULL, avatar_mime = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, id)
 	return err
 }
+
+func SetUserCoffeePaid(db *sql.DB, userID string) error {
+	_, err := db.Exec(`UPDATE users SET coffee_paid = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userID)
+	return err
+}
+
+func GetUserCoffeePaid(db *sql.DB, userID string) (bool, error) {
+	var paid bool
+	err := db.QueryRow(`SELECT coffee_paid FROM users WHERE id = $1`, userID).Scan(&paid)
+	return paid, err
+}

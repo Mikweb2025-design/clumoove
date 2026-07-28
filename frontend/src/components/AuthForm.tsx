@@ -869,7 +869,6 @@ export function AuthForm({ apiUrl, onAuthSuccess, onOrderCreated, showCoffeePaym
             </p>
           )}
           </div>
-        )}
       </div>
 
       {/* Coffee / Free Tier — shown on login page only when PayPal is configured */}
@@ -919,7 +918,6 @@ export function AuthForm({ apiUrl, onAuthSuccess, onOrderCreated, showCoffeePaym
               €2 {t('coffee.buy')}
             </button>
           </div>
-        </div>
         </div>
         {successMessage === t('coffee.paymentOpened') && (
           <p className="text-[10px] text-amber-700/70 mt-2 text-center">

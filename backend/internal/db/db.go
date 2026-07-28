@@ -242,6 +242,11 @@ func InitDB(connStr string) (*sql.DB, error) {
 				log.Printf("Failed schema migration (login_locked_until): %v\n", err)
 			}
 
+			_, err = db.Exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS coffee_paid BOOLEAN NOT NULL DEFAULT FALSE`)
+			if err != nil {
+				log.Printf("Failed schema migration (coffee_paid): %v\n", err)
+			}
+
 			_, err = db.Exec(`CREATE TABLE IF NOT EXISTS user_smtp_settings (
 				user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
 				smtp_host VARCHAR(255) NOT NULL,

@@ -325,7 +325,7 @@ export function MigrationsDashboard({
                   const orderData = await orderRes.json();
                   if (orderRes.ok && orderData.success && orderData.approval_url) {
                     window.open(orderData.approval_url, '_blank');
-                    if (confirm(t('coffee.paypalConfirm'))) {
+                    if (await confirm({ message: t('coffee.paypalConfirm') })) {
                       const captureRes = await fetch(`${apiUrl}/api/paypal/capture-order`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -346,7 +346,7 @@ export function MigrationsDashboard({
                     if (settings.paypal_email) {
                       const link = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(settings.paypal_email)}&item_name=Buy+me+a+coffee+-+Clumoove&currency_code=EUR&amount=${encodeURIComponent(settings.coffee_price || '2.00')}`;
                       window.open(link, '_blank');
-                      if (confirm(t('coffee.paypalConfirm'))) {
+                      if (await confirm({ message: t('coffee.paypalConfirm') })) {
                         const verifyRes = await fetch(`${apiUrl}/api/payment/verify`, {
                           method: 'POST',
                           headers: { 'Authorization': `Bearer ${token}` },
@@ -366,12 +366,11 @@ export function MigrationsDashboard({
                 }
               }}
             >
-              <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform" />
-              <span>{t('migrations.newMigration')}</span>
+              ☕ €2 {t('coffee.buy')}
             </button>
           </div>
         </div>
-      </div>
+      )}
 
       {initialDataLoading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4" aria-live="polite">
