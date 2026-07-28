@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Users as UsersIcon, Activity, BarChart3, ScrollText, UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, ShieldOff, RefreshCw, CloudSync, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, Users as UsersIcon, Activity, BarChart3, ScrollText, UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, ShieldOff, RefreshCw, CloudSync, SlidersHorizontal, Coffee } from 'lucide-react';
 import { useApiError } from '../utils/apiError';
 import { adminApi, type AdminUser, type AdminStats, type AuditEntry, type ApiResult } from '../utils/adminApi';
 import { useFormat } from '../utils/format';
@@ -642,6 +642,12 @@ function SystemTab({ apiUrl, token, onMessage }: {
   const [paypalSaving, setPaypalSaving] = useState<boolean>(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
+  const [coffeeEnabled, setCoffeeEnabled] = useState<boolean>(true);
+  const [coffeePrice, setCoffeePrice] = useState<string>('2.00');
+  const [coffeePriceDirty, setCoffeePriceDirty] = useState<string>('2.00');
+  const [coffeeLoading, setCoffeeLoading] = useState<boolean>(false);
+  const [coffeeSaving, setCoffeeSaving] = useState<boolean>(false);
+
   useEffect(() => {
     let cancelled = false;
     apiFetch(`${apiUrl}/api/settings`)
@@ -651,6 +657,9 @@ function SystemTab({ apiUrl, token, onMessage }: {
           setRegistrationsEnabled(data.registrations_enabled === 'true');
           setPaypalEmail(data.paypal_email || '');
           setPaypalEmailDirty(data.paypal_email || '');
+          setCoffeeEnabled(data.coffee_enabled !== 'false');
+          setCoffeePrice(data.coffee_price || '2.00');
+          setCoffeePriceDirty(data.coffee_price || '2.00');
         }
       })
       .catch((err) => {
@@ -722,6 +731,66 @@ function SystemTab({ apiUrl, token, onMessage }: {
     }
   };
 
+  const handleToggleCoffeeEnabled = async (checked: boolean) => {
+    setMessage(null);
+    setCoffeeLoading(true);
+    try {
+      const res = await apiFetch(`${apiUrl}/api/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          key: 'coffee_enabled',
+          value: checked ? 'true' : 'false',
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}) as { error_code?: string });
+        throw new Error(translateApiError(data.error_code));
+      }
+
+      setCoffeeEnabled(checked);
+      onMessage({ text: checked ? 'Coffee button enabled' : 'Coffee button disabled', type: 'success' });
+    } catch (err) {
+      setMessage({ text: (err as Error).message, type: 'error' });
+    } finally {
+      setCoffeeLoading(false);
+    }
+  };
+
+  const handleSaveCoffeePrice = async () => {
+    setMessage(null);
+    setCoffeeSaving(true);
+    try {
+      const res = await apiFetch(`${apiUrl}/api/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          key: 'coffee_price',
+          value: coffeePriceDirty,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}) as { error_code?: string });
+        throw new Error(translateApiError(data.error_code));
+      }
+
+      setCoffeePrice(coffeePriceDirty);
+      onMessage({ text: 'Coffee price saved', type: 'success' });
+    } catch (err) {
+      setMessage({ text: (err as Error).message, type: 'error' });
+    } finally {
+      setCoffeeSaving(false);
+    }
+  };
+
   return (
     <SectionCard icon={CloudSync} title={t('admin.system.title')}>
       <MessageBanner message={message} />
@@ -765,6 +834,50 @@ function SystemTab({ apiUrl, token, onMessage }: {
           </button>
         </div>
       </div>
+
+      <div className="flex items-center justify-between p-3.5 bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border)]/50 rounded-2xl mt-3">
+        <div className="flex items-center gap-2 text-left pr-4">
+          <Coffee className="w-4 h-4 text-amber-600" />
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold text-[var(--color-text-primary)] font-display">Coffee Button</h4>
+            <p className="text-[10px] text-[var(--color-text-muted)] leading-normal">
+              Buy me a coffee button auf der Landingpage anzeigen
+            </p>
+          </div>
+        </div>
+        <Toggle
+          checked={coffeeEnabled}
+          disabled={coffeeLoading}
+          onChange={handleToggleCoffeeEnabled}
+          label="Coffee Button"
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-3.5 bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border)]/50 rounded-2xl">
+        <div className="text-left space-y-1 pr-4 flex-1">
+          <h4 className="text-xs font-bold text-[var(--color-text-primary)] font-display">Coffee Price</h4>
+          <p className="text-[10px] text-[var(--color-text-muted)] leading-normal">
+            Preis für den Kaffee (z. B. 2.00)
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-[var(--color-text-muted)] font-bold">€</span>
+          <input
+            type="text"
+            value={coffeePriceDirty}
+            onChange={(e) => setCoffeePriceDirty(e.target.value)}
+            placeholder="2.00"
+            className="w-24 px-3 py-2 bg-[var(--color-bg-secondary)]/55 border border-[var(--color-border)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-portal-orange/30 focus:border-portal-orange transition-all font-sans"
+          />
+          <button
+            onClick={handleSaveCoffeePrice}
+            disabled={coffeeSaving || coffeePriceDirty === coffeePrice}
+            className="px-4 py-2 bg-gradient-to-r from-portal-orange to-orange-500 text-[var(--color-text-inverse)] rounded-xl text-xs font-bold font-mono transition-all uppercase tracking-wider cursor-pointer disabled:opacity-40"
+          >
+            {t('common.save')}
+          </button>
+        </div>
+      </div>
     </SectionCard>
   );
 }
@@ -793,3 +906,4 @@ function Pager({ page, pages, onPage }: { page: number; pages: number; onPage: (
     </div>
   );
 }
+

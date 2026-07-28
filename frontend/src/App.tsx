@@ -24,14 +24,9 @@ type Step = 'landing' | 'login' | 'history' | 'connect' | 'select' | 'dashboard'
 
 const getApiUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
-  // If the env variable is set and NOT pointing to localhost/127.0.0.1, use it.
-  // Otherwise, dynamically determine it based on the browser address.
   if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
     return envUrl;
   }
-  // Fallback: Dynamically determine the backend API URL.
-  // If we are running on standard ports (no port, 80, or 443) on a custom domain,
-  // use the same host without a port to route through the reverse proxy.
   const protocol = window.location.protocol;
   const hostname = window.location.hostname;
   const port = window.location.port;
@@ -43,8 +38,6 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
-// Security: warn when the API is reached over plaintext HTTP on a non-loopback
-// host, since access tokens and connection credentials would then transit in clear (A04).
 if (API_URL.startsWith('http://') && !/(localhost|127\.0\.0\.1)/.test(new URL(API_URL).hostname)) {
   console.warn('[security] API communication is over plaintext HTTP. Use HTTPS to protect tokens and credentials.');
 }
@@ -80,11 +73,12 @@ function App() {
 
   const [paypalConfigured, setPaypalConfigured] = useState<boolean>(false);
   const [coffeeRequired, setCoffeeRequired] = useState<boolean>(false);
+  const [coffeeEnabled, setCoffeeEnabled] = useState<boolean>(true);
+  const [coffeePrice, setCoffeePrice] = useState<string>('2.00');
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
-  const showCoffeePayment = coffeeRequired && paypalConfigured;
+  const showCoffeePayment = coffeeEnabled && coffeeRequired && paypalConfigured;
 
-  // Cancel any open confirm when the user leaves the view that opened it.
   useEffect(() => {
     dismissConfirm();
   }, [step, dismissConfirm]);
@@ -106,31 +100,24 @@ function App() {
           if (data.coffee_required === 'true' || data.coffee_required === true) {
             setCoffeeRequired(true);
           }
+          if (data.coffee_enabled !== undefined) {
+            setCoffeeEnabled(data.coffee_enabled !== 'false');
+          }
+          if (data.coffee_price) {
+            setCoffeePrice(data.coffee_price);
+          }
         }
       })
       .catch(() => {});
   }, []);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  // Tracks how many app-pushed history entries sit above the seeded top-level
-  // entry, so "back to overview" can pop deterministically instead of using a
-  // one-way latch that never resets.
   const historyDepth = useRef(0);
-  // Whether the entry we are currently sitting on was pushed by the app
-  // (vs. a seeded/replaced baseline or an external entry). Used by popstate to
-  // decide whether leaving it should decrement historyDepth.
   const currentAppEntry = useRef(false);
-  // Tracks history length so popstate can tell back (length shrinks) from
-  // forward (length grows) and keep historyDepth in sync for both directions.
   const prevHistoryLen = useRef(window.history.length);
 
-  // Capture the migration ID from the initial URL once on mount. Using a ref
-  // prevents re-renders (caused by in-app navigation changing window.location.search)
-  // from re-triggering the seed effect and resetting the step to 'login'.
   const initialUrlMigIdRef = useRef(new URLSearchParams(window.location.search).get('migration') ?? '');
   const urlMigId = initialUrlMigIdRef.current;
 
-  // Build the URL (keeping the ?migration= param) and push/replace a history entry
-  // carrying the in-app navigation state, then sync React state.
   const applyHistory = (nextStep: Step, idVal: string, replace: boolean) => {
     const url = new URL(window.location.href);
     const state: Record<string, unknown> = { step: nextStep, appEntry: !replace };
@@ -148,7 +135,6 @@ function App() {
     }
 
     if (replace) {
-      // A replace establishes a fresh baseline: forget any pushed entries.
       window.history.replaceState(state, '', url.toString());
       historyDepth.current = 0;
       currentAppEntry.current = false;
@@ -166,22 +152,16 @@ function App() {
     }
   };
 
-  // Replace the current history entry (no new navigable entry). Used for
-  // post-auth / deep-link restores where browser-back should leave intentionally.
   const replaceNav = useCallback((nextStep: Step, migId: string = '') => applyHistory(nextStep, migId, true), []);
 
-  // Forward in-app navigation: push a new history entry.
   const navigate = (nextStep: Step, migId?: string) => {
     applyHistory(nextStep, migId ?? migrationId, false);
   };
 
-  // Clicking the logo always returns to the top-level migration overview,
-  // replacing the current entry so further browser-back leaves the app.
   const goToOverview = () => {
     replaceNav('history');
   };
 
-  // In-app back (FileBrowser / Settings / Admin).
   const goBack = () => {
     window.history.back();
   };
@@ -205,7 +185,6 @@ function App() {
     tokenRef.current = token;
   }, [token]);
 
-  // Scoped API client: single-flight 401 refresh without patching window.fetch.
   useEffect(() => {
     configureApiClient({
       apiUrl: API_URL,
@@ -220,7 +199,6 @@ function App() {
     });
   }, [handleLogout]);
 
-  // Click outside / Escape to close user menu
   useEffect(() => {
     if (!showUserMenu) return;
     const handleOutsideClick = (e: MouseEvent) => {
@@ -239,21 +217,14 @@ function App() {
     };
   }, [showUserMenu]);
 
-  // Seed the initial history entry with the current step/migration so the very
-  // first entry carries navigable state (replace, not push). Depends only on
-  // initialStep (which is also stable) so this runs exactly once on mount.
   useEffect(() => {
     applyHistory(initialStep, urlMigId, true);
-  // urlMigId is stable (backed by a ref), so this is effectively [initialStep].
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialStep]);
 
-  // Handle browser back/forward between in-app screens.
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
       const s = e.state as { step?: Step; migration?: string; sync?: string; appEntry?: boolean } | null;
-      // Keep historyDepth in sync for both back (length shrinks) and forward
-      // (length grows) so the seeded top-level overview remains the back target.
       const newLen = window.history.length;
       if (newLen < prevHistoryLen.current && currentAppEntry.current) {
         historyDepth.current = Math.max(0, historyDepth.current - 1);
@@ -269,14 +240,11 @@ function App() {
         } else {
           setMigrationId(s.migration ?? new URLSearchParams(window.location.search).get('migration') ?? '');
         }
-        // Credentials/initialFiles are only needed by `select`; clear them when
-        // navigating to an unrelated screen to avoid stale secrets in memory.
         if (s.step !== 'dashboard' && s.step !== 'select') {
           setCredentials(null);
           setInitialFiles([]);
         }
       } else {
-        // Pre-app / external entry: re-derive step from session like initial load.
         const params = new URLSearchParams(window.location.search);
         const mig = params.get('migration');
         const syncJ = params.get('sync');
@@ -297,14 +265,11 @@ function App() {
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  // 1. Silent login / Refresh Token check on load
   useEffect(() => {
-    // If we arrived via a password reset link or email change link, skip auth validation entirely.
     if (resetTokenFromUrl || emailChangeTokenFromUrl) {
       return;
     }
 
-    // No session stored -> stay on login (initial state already covers this).
     if (localStorage.getItem('has_session') !== 'true') {
       return;
     }
@@ -315,7 +280,6 @@ function App() {
           const data = await res.json();
           setToken(data.access_token);
           
-          // Fetch user profile
           const meRes = await apiFetch(`${API_URL}/api/auth/me`, {
             headers: { 'Authorization': `Bearer ${data.access_token}` },
           });
@@ -328,12 +292,10 @@ function App() {
 			  void i18n.changeLanguage(userData.language);
 			}
 
-            // Check if there is an active migration ID in url
             const params = new URLSearchParams(window.location.search);
             const urlMigId = params.get('migration');
             const urlSyncId = params.get('sync');
             if (urlMigId) {
-              // Verify active migration status
               const migRes = await apiFetch(`${API_URL}/api/migration/${urlMigId}`, {
                 headers: { 'Authorization': `Bearer ${data.access_token}` },
               });
@@ -343,7 +305,6 @@ function App() {
                 replaceNav('history', '');
               }
             } else if (urlSyncId) {
-              // Verify active sync status
               const syncRes = await apiFetch(`${API_URL}/api/sync/${urlSyncId}`, {
                 headers: { 'Authorization': `Bearer ${data.access_token}` },
               });
@@ -372,11 +333,9 @@ function App() {
       .finally(() => {
         setIsValidating(false);
       });
-    // replaceNav / applyHistory are stable in intent; intentionally not deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetTokenFromUrl, emailChangeTokenFromUrl]);
 
-  // 2. Silent JWT refresh (every 14 minutes)
   useEffect(() => {
     if (!token) return;
     const interval = setInterval(async () => {
@@ -391,7 +350,7 @@ function App() {
       } catch (e) {
         console.error('Failed silent refresh:', e);
       }
-    }, 14 * 60 * 1000); // 14 minutes
+    }, 14 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, [token, handleLogout]);
@@ -430,8 +389,6 @@ function App() {
   };
 
   const handleStartSuccess = (id: string, isSync?: boolean) => {
-    // Secrets (source/target passwords, OAuth tokens, SFTP keys) are no longer
-    // needed once the migration is created — drop them from memory.
     setCredentials(null);
     setInitialFiles([]);
     if (isSync) {
@@ -442,7 +399,6 @@ function App() {
   };
 
   const handleResetPasswordSuccess = () => {
-    // Clean up the URL param and return to login
     const url = new URL(window.location.href);
     url.searchParams.delete('reset-token');
     window.history.replaceState({}, '', url.toString());
@@ -451,7 +407,6 @@ function App() {
   };
 
   const handleConfirmEmailChangeSuccess = () => {
-    // Clean up the URL param and return to login (refresh tokens were invalidated)
     const url = new URL(window.location.href);
     url.searchParams.delete('email-change-token');
     window.history.replaceState({}, '', url.toString());
@@ -492,7 +447,6 @@ function App() {
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] flex flex-col font-sans selection:bg-portal-orange selection:text-white relative">
       
-      {/* Floating Glassmorphism Header */}
       <header className="sticky top-0 z-50 glass-panel border-b border-[var(--color-border)] backdrop-blur-lg shadow-sm transition-all duration-300">
         <div className="max-w-6xl mx-auto px-6 h-18 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -511,7 +465,6 @@ function App() {
             </span>
           </div>
 
-          {/* User Section in Header */}
           {user && (
             <div className="relative" ref={userMenuRef}>
               <button
@@ -585,12 +538,12 @@ function App() {
         </div>
       </header>
 
-      {/* Main Structural Body */}
       <main className="flex-grow flex flex-col justify-center px-6 py-8 max-w-5xl w-full mx-auto relative z-10 animate-slide-up">
         <div className="w-full">
           {step === 'landing' && (
             <LandingPage
               showCoffeePayment={showCoffeePayment}
+              coffeePrice={coffeePrice}
               inlineAuth={showCoffeePayment ? undefined : { apiUrl: API_URL, onAuthSuccess: handleAuthSuccess }}
               onGetStarted={() => replaceNav('login')}
               onBuyCoffee={async () => {
@@ -706,7 +659,6 @@ function App() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-[var(--color-border)] py-4 mt-auto bg-[var(--color-glass-bg)] backdrop-blur-md relative z-40">
         <div className="max-w-6xl mx-auto px-6 flex justify-end items-center">
           <LanguageSwitcher authenticated={Boolean(user && token)} />
@@ -716,7 +668,6 @@ function App() {
   );
 }
 
-// Wrap App with ThemeProvider, ConfirmationProvider, ToastProvider
 function AppWithTheme() {
   return (
     <ThemeProvider>
@@ -730,3 +681,4 @@ function AppWithTheme() {
 }
 
 export default AppWithTheme;
+

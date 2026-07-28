@@ -7,10 +7,11 @@ interface LandingPageProps {
   onGetStarted: () => void;
   onBuyCoffee: () => void;
   showCoffeePayment?: boolean;
+  coffeePrice?: string;
   inlineAuth?: { apiUrl: string; onAuthSuccess: (token: string, user: User) => void };
 }
 
-export function LandingPage({ onGetStarted, onBuyCoffee, showCoffeePayment, inlineAuth }: LandingPageProps) {
+export function LandingPage({ onGetStarted, onBuyCoffee, showCoffeePayment, coffeePrice, inlineAuth }: LandingPageProps) {
   const { t } = useTranslation();
 
   return (
@@ -127,7 +128,7 @@ export function LandingPage({ onGetStarted, onBuyCoffee, showCoffeePayment, inli
                 {t('landing.why.feature2.desc')}
               </p>
             </div>
-            <div className="glass-panel rounded-3xl p-6 shadow-portal hover:shadow-portal-hover border border-[var(--color-glass-border)] transition-all duration-500">
+            <div className="glass-panel rounded-3xl p-8 shadow-portal hover:shadow-portal-hover border border-[var(--color-glass-border)] transition-all duration-500 text-center">
               <div className="w-10 h-10 mb-4 flex items-center justify-center rounded-xl bg-gradient-to-tr from-portal-orange/20 to-yellow-500/20 text-portal-orange">
                 <Shield className="w-5 h-5 stroke-[2]" />
               </div>
@@ -168,7 +169,7 @@ export function LandingPage({ onGetStarted, onBuyCoffee, showCoffeePayment, inli
             onClick={onBuyCoffee}
             className="group inline-flex items-center gap-2 bg-white text-amber-700 font-display font-bold text-sm px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 cursor-pointer"
           >
-            €2 {t('coffee.buy')}
+            €{coffeePrice || '2.00'} {t('coffee.buy')}
           </button>
         </div>
       </section>
@@ -192,3 +193,4 @@ export function LandingPage({ onGetStarted, onBuyCoffee, showCoffeePayment, inli
     </div>
   );
 }
+

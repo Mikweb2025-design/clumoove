@@ -280,6 +280,18 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	result["paypal_email"] = paypalEmail
 
+	coffeePrice, _ := db.GetSetting(s.db, "coffee_price")
+	if coffeePrice == "" {
+		coffeePrice = "2.00"
+	}
+	result["coffee_price"] = coffeePrice
+
+	coffeeEnabled, _ := db.GetSetting(s.db, "coffee_enabled")
+	if coffeeEnabled == "" {
+		coffeeEnabled = "true"
+	}
+	result["coffee_enabled"] = coffeeEnabled
+
 	// Try to extract user from optional Authorization header for coffee_paid
 	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
 		parts := strings.SplitN(authHeader, " ", 2)
@@ -318,12 +330,25 @@ func (s *APIServer) handleUpdateSetting(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if req.Key != "registrations_enabled" && req.Key != "paypal_email" {
+	allowedKeys := map[string]bool{
+		"registrations_enabled": true,
+		"paypal_email":          true,
+		"coffee_price":          true,
+		"coffee_enabled":        true,
+		"coffee_required":       true,
+		"free_transfer_gb":      true,
+	}
+	if !allowedKeys[req.Key] {
 		writeError(w, http.StatusForbidden, ErrSettingForbidden)
 		return
 	}
 
-	if req.Key == "registrations_enabled" && req.Value != "true" && req.Value != "false" {
+	boolKeys := map[string]bool{
+		"registrations_enabled": true,
+		"coffee_enabled":        true,
+		"coffee_required":       true,
+	}
+	if boolKeys[req.Key] && req.Value != "true" && req.Value != "false" {
 		writeError(w, http.StatusBadRequest, ErrSettingInvalid)
 		return
 	}
@@ -948,3 +973,4 @@ func (s *APIServer) handleTestSMTP(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{"success": true})
 }
+
