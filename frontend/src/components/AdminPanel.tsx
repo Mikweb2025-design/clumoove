@@ -636,7 +636,10 @@ function SystemTab({ apiUrl, token, onMessage }: {
   const translateApiError = useApiError();
 
   const [registrationsEnabled, setRegistrationsEnabled] = useState<boolean>(false);
+  const [paypalEmail, setPaypalEmail] = useState<string>('');
+  const [paypalEmailDirty, setPaypalEmailDirty] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [paypalSaving, setPaypalSaving] = useState<boolean>(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -644,7 +647,11 @@ function SystemTab({ apiUrl, token, onMessage }: {
     apiFetch(`${apiUrl}/api/settings`)
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled) setRegistrationsEnabled(data.registrations_enabled === 'true');
+        if (!cancelled) {
+          setRegistrationsEnabled(data.registrations_enabled === 'true');
+          setPaypalEmail(data.paypal_email || '');
+          setPaypalEmailDirty(data.paypal_email || '');
+        }
       })
       .catch((err) => {
         console.error('Failed to fetch settings:', err);
@@ -685,6 +692,36 @@ function SystemTab({ apiUrl, token, onMessage }: {
     }
   };
 
+  const handleSavePaypalEmail = async () => {
+    setMessage(null);
+    setPaypalSaving(true);
+    try {
+      const res = await apiFetch(`${apiUrl}/api/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          key: 'paypal_email',
+          value: paypalEmailDirty,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}) as { error_code?: string });
+        throw new Error(translateApiError(data.error_code));
+      }
+
+      setPaypalEmail(paypalEmailDirty);
+      onMessage({ text: 'PayPal email saved', type: 'success' });
+    } catch (err) {
+      setMessage({ text: (err as Error).message, type: 'error' });
+    } finally {
+      setPaypalSaving(false);
+    }
+  };
+
   return (
     <SectionCard icon={CloudSync} title={t('admin.system.title')}>
       <MessageBanner message={message} />
@@ -703,10 +740,34 @@ function SystemTab({ apiUrl, token, onMessage }: {
           label={t('settings.allowRegistrations')}
         />
       </div>
+
+      <div className="flex items-center justify-between p-3.5 bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border)]/50 rounded-2xl mt-3">
+        <div className="text-left space-y-1 pr-4 flex-1">
+          <h4 className="text-xs font-bold text-[var(--color-text-primary)] font-display">PayPal Email</h4>
+          <p className="text-[10px] text-[var(--color-text-muted)] leading-normal">
+            PayPal-Empfängeradresse für Kaffee-Spenden
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="email"
+            value={paypalEmailDirty}
+            onChange={(e) => setPaypalEmailDirty(e.target.value)}
+            placeholder="paypal@example.com"
+            className="w-52 px-3 py-2 bg-[var(--color-bg-secondary)]/55 border border-[var(--color-border)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-portal-orange/30 focus:border-portal-orange transition-all font-sans"
+          />
+          <button
+            onClick={handleSavePaypalEmail}
+            disabled={paypalSaving || paypalEmailDirty === paypalEmail}
+            className="px-4 py-2 bg-gradient-to-r from-portal-orange to-orange-500 text-[var(--color-text-inverse)] rounded-xl text-xs font-bold font-mono transition-all uppercase tracking-wider cursor-pointer disabled:opacity-40"
+          >
+            {t('common.save')}
+          </button>
+        </div>
+      </div>
     </SectionCard>
   );
 }
-
 // ---------------------------------------------------------------------------
 // Shared pager
 // ---------------------------------------------------------------------------

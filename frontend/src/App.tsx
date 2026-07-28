@@ -60,7 +60,7 @@ function App() {
     ? new URLSearchParams(window.location.search).get('email-change-token')
     : null;
 
-  const initialStep: Step = emailChangeTokenFromUrl ? 'confirm-email' : resetTokenFromUrl ? 'reset-password' : 'login';
+  const initialStep: Step = emailChangeTokenFromUrl ? 'confirm-email' : resetTokenFromUrl ? 'reset-password' : 'landing';
   const [step, setStep] = useState<Step>(initialStep);
   const [token, setToken] = useState<string>('');
   const tokenRef = useRef<string>('');

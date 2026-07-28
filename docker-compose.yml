@@ -67,6 +67,8 @@ services:
       - OAUTH_REDIRECT_URI=${OAUTH_REDIRECT_URI:-}
       - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
       - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
+      - COFFEE_REQUIRED=${COFFEE_REQUIRED:-}
+      - PAYPAL_EMAIL=${PAYPAL_EMAIL:-}
       - LOCAL_STORAGE_ROOT=/clumoove
     volumes:
       - ${LOCAL_STORAGE_HOST_PATH:-./local-storage}:/clumoove

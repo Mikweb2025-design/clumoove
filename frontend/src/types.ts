@@ -12,7 +12,7 @@ export type Provider =
   | 'dropbox'
   | 'webdav'
   | 'magentacloud'
-  | 'google'
+  | 'google' | 'googlephotos'
   | 'hidrive'
   | 'smb'
   | 's3'

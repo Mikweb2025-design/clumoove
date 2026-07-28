@@ -72,7 +72,10 @@ func getPayPalClientSecret() string {
 }
 
 func isPayPalConfigured() bool {
-	return getPayPalClientID() != "" && getPayPalClientSecret() != ""
+	if getPayPalClientID() != "" && getPayPalClientSecret() != "" {
+		return true
+	}
+	return os.Getenv("PAYPAL_EMAIL") != ""
 }
 
 func getPayPalAccessToken() (string, error) {

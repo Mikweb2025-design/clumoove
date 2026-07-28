@@ -274,6 +274,12 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		"paypal_configured":     isPayPalConfigured(),
 	}
 
+	paypalEmail := os.Getenv("PAYPAL_EMAIL")
+	if dbEmail, err := db.GetSetting(s.db, "paypal_email"); err == nil && dbEmail != "" {
+		paypalEmail = dbEmail
+	}
+	result["paypal_email"] = paypalEmail
+
 	// Try to extract user from optional Authorization header for coffee_paid
 	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
 		parts := strings.SplitN(authHeader, " ", 2)
@@ -312,12 +318,12 @@ func (s *APIServer) handleUpdateSetting(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if req.Key != "registrations_enabled" {
+	if req.Key != "registrations_enabled" && req.Key != "paypal_email" {
 		writeError(w, http.StatusForbidden, ErrSettingForbidden)
 		return
 	}
 
-	if req.Value != "true" && req.Value != "false" {
+	if req.Key == "registrations_enabled" && req.Value != "true" && req.Value != "false" {
 		writeError(w, http.StatusBadRequest, ErrSettingInvalid)
 		return
 	}
