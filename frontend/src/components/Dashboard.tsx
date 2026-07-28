@@ -487,20 +487,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ migrationId, apiUrl, onRes
               </div>
             </div>
 
-            {/* Glowing Rounded Progress Bar */}
-            <div className="w-full bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] h-5 p-0.5 mb-6 rounded-full shadow-inner relative overflow-hidden">
-              <div
-                className="bg-gradient-to-r from-portal-orange to-yellow-500 h-full rounded-full transition-all duration-500 ease-out relative"
-                style={{ width: `${byteProgressPercent}%` }}
-              >
-                <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.15)_50%,rgba(255,255,255,0.15)_75%,transparent_75%,transparent)] bg-[length:16px_16px] animate-pulse" />
+            {/* Cinematic Progress Bar */}
+            <div className="relative mb-6">
+              <div className="w-full bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] h-6 p-0.5 rounded-full shadow-inner relative overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-portal-orange via-yellow-400 to-portal-orange h-full rounded-full transition-all duration-500 ease-out relative overflow-hidden"
+                  style={{ width: `${byteProgressPercent}%`, backgroundSize: '200% 100%' }}
+                >
+                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:16px_16px] animate-pulse" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer" style={{ animation: 'shimmer 2.5s ease-in-out infinite' }} />
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white/30 rounded-full blur-sm" style={{ animation: 'pulse-glow 1.5s ease-in-out infinite' }} />
+                </div>
+              </div>
+              <div className="flex justify-between mt-1.5 text-[9px] font-mono text-[var(--color-text-muted)] tracking-wider">
+                <span>{t('dashboard.transferred')}: <strong className="text-[var(--color-text-primary)]">{formatBytes(data.processed_bytes)}</strong></span>
+                <span>{t('dashboard.total')}: <strong className="text-[var(--color-text-primary)]">{formatBytes(data.total_bytes)}</strong></span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-[10px] font-mono font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
+            <div className="grid grid-cols-3 gap-4 text-[10px] font-mono font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
               <div className="flex items-center gap-2">
                 <HardDrive className="w-4 h-4 text-[var(--color-portal-navy-themed)]" />
-                <span>{t('dashboard.transferred')}: <strong className="text-[var(--color-text-primary)]">{formatBytes(data.processed_bytes)}</strong> / {formatBytes(data.total_bytes)}</span>
+                <span>{t('dashboard.transferred')}: <strong className="text-[var(--color-text-primary)]">{formatBytes(data.processed_bytes)}</strong></span>
+              </div>
+              <div className="flex items-center gap-2 justify-center">
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-portal-orange animate-pulse" />
+                  <strong className="text-[var(--color-text-primary)]">{data.processed_files}</strong> / {data.total_files} files
+                </span>
               </div>
               <div className="flex items-center gap-2 justify-end">
                 <Clock className="w-4 h-4 text-[var(--color-portal-navy-themed)]" />

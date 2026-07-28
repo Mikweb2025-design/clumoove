@@ -566,6 +566,7 @@ function SystemTab({ apiUrl, token, onMessage }: {
   const [coffeePrice, setCoffeePrice] = useState('2.00');
   const [freeTransferGB, setFreeTransferGB] = useState('100');
   const [coffeeRequired, setCoffeeRequired] = useState(true);
+  const [coffeeEnabled, setCoffeeEnabled] = useState(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -580,6 +581,7 @@ function SystemTab({ apiUrl, token, onMessage }: {
           setCoffeePrice(data.coffee_price || '2.00');
           setFreeTransferGB(data.free_transfer_gb || '100');
           setCoffeeRequired(data.coffee_required !== 'false');
+          setCoffeeEnabled(data.coffee_enabled !== 'false');
         }
       })
       .catch((err) => {
@@ -685,6 +687,32 @@ function SystemTab({ apiUrl, token, onMessage }: {
             try {
               await updateSetting('coffee_required', checked ? 'true' : 'false');
               setCoffeeRequired(checked);
+              onMessage({ text: t('settings.messages.adminSavedOn'), type: 'success' });
+            } catch (err) {
+              setMessage({ text: (err as Error).message, type: 'error' });
+            } finally {
+              setLoading(false);
+            }
+          }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-3.5 bg-[var(--color-bg-tertiary)]/50 border border-[var(--color-border)]/50 rounded-2xl">
+        <div className="text-left space-y-1 pr-4">
+          <h4 className="text-xs font-bold text-[var(--color-text-primary)] font-display">{t('admin.system.coffeeEnabled')}</h4>
+          <p className="text-[10px] text-[var(--color-text-muted)] leading-normal">
+            {t('admin.system.coffeeEnabledHint')}
+          </p>
+        </div>
+        <Toggle
+          checked={coffeeEnabled}
+          disabled={loading}
+          onChange={async (checked) => {
+            setMessage(null);
+            setLoading(true);
+            try {
+              await updateSetting('coffee_enabled', checked ? 'true' : 'false');
+              setCoffeeEnabled(checked);
               onMessage({ text: t('settings.messages.adminSavedOn'), type: 'success' });
             } catch (err) {
               setMessage({ text: (err as Error).message, type: 'error' });

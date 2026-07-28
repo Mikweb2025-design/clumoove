@@ -676,12 +676,12 @@
     },
     "coffee": {
       "title": "☕ Unterstütze das Projekt",
-      "desc": "100 GB kostenloser Transfer — mit einem €2 Kaffee."
+      "desc": "100 GB kostenloser Transfer — mit einem €{{price}} Kaffee."
     }
   },
   "coffee": {
     "title": "☕ Kauf mir einen Kaffee",
-    "description": "100 GB Übertragung mit einem €2 Kaffee. Unterstütze das Projekt mit €2.",
+    "description": "100 GB Übertragung mit einem €{{price}} Kaffee. Unterstütze das Projekt mit €{{price}}.",
     "usage": "{{used}} / {{total}}",
     "freeTier": "Kostenloses Kontingent",
     "limitReached": "Limit erreicht!",

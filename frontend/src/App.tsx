@@ -12,10 +12,11 @@ import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { AdminPanel } from './components/AdminPanel';
 import { PrivacyPage } from './components/PrivacyPage';
 import { TermsPage } from './components/TermsPage';
-import { CloudSync, LogOut, User as UserIcon, Settings as SettingsIcon, Shield } from 'lucide-react';
+import { CloudSync, LogOut, User as UserIcon, Settings as SettingsIcon, Shield, Sun, Moon } from 'lucide-react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { NetworkMapBackground } from './components/landing/NetworkMapBackground';
+import { ParticleNetworkBackground } from './components/landing/ParticleNetworkBackground';
 import type { User, MigrationConfig, CloudFile } from './types';
 import { listenForOAuthMessage } from './utils/oauth';
 
@@ -76,6 +77,32 @@ function App() {
   const [localStorageEnabled, setLocalStorageEnabled] = useState<boolean>(false);
   const [oauthProviders, setOauthProviders] = useState<Record<string, boolean>>({});
   const [pendingPayment, setPendingPayment] = useState<boolean>(false);
+  const [coffeePrice, setCoffeePrice] = useState<string>('2.00');
+  const [coffeeEnabled, setCoffeeEnabled] = useState<boolean>(true);
+  const [themePref, setThemePref] = useState<'light' | 'dark' | 'auto'>(() => {
+    const s = localStorage.getItem('clumoove-theme-preference');
+    if (s === 'light' || s === 'dark' || s === 'auto') return s;
+    return 'auto';
+  });
+  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const update = () => {
+      const eff = themePref === 'auto' ? (mq.matches ? 'dark' : 'light') : themePref;
+      setEffectiveTheme(eff);
+      document.documentElement.setAttribute('data-theme', eff);
+    };
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, [themePref]);
+
+  const toggleTheme = () => {
+    const next = effectiveTheme === 'dark' ? 'light' : 'dark';
+    setThemePref(next);
+    localStorage.setItem('clumoove-theme-preference', next);
+  };
 
   useEffect(() => {
     fetch(`${API_URL}/api/settings`)
@@ -86,6 +113,12 @@ function App() {
         }
         if (data && data.oauth_providers && typeof data.oauth_providers === 'object') {
           setOauthProviders(data.oauth_providers);
+        }
+        if (data && data.coffee_price) {
+          setCoffeePrice(data.coffee_price);
+        }
+        if (data && data.coffee_enabled !== undefined) {
+          setCoffeeEnabled(data.coffee_enabled !== 'false');
         }
       })
       .catch(() => {});
@@ -494,7 +527,7 @@ function App() {
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] flex flex-col font-sans selection:bg-portal-orange selection:text-white relative overflow-x-hidden">
 
-      <NetworkMapBackground />
+      {step === 'landing' ? <ParticleNetworkBackground /> : <NetworkMapBackground />}
 
       {/* Floating Glassmorphism Header */}
       <header className="sticky top-0 z-50 glass-panel border-b border-[var(--color-border)] backdrop-blur-lg shadow-sm transition-all duration-300">
@@ -512,17 +545,25 @@ function App() {
             </span>
           </div>
 
-          {/* Landing Page Nav */}
-          {step === 'landing' && !user && (
-            <div className="flex items-center gap-3">
+          {/* Theme Toggle + Landing Page Nav */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="w-8 h-8 flex items-center justify-center rounded-xl text-[var(--color-text-muted)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+              title={effectiveTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {effectiveTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+
+            {step === 'landing' && !user && (
               <button
                 onClick={() => replaceNav('login')}
                 className="text-[11px] font-bold font-mono uppercase tracking-wider text-[var(--color-portal-navy-themed)] border-2 border-[var(--color-portal-navy-themed)] px-5 py-1.5 rounded-xl hover:bg-[var(--color-portal-navy-themed)] hover:text-white transition-all duration-300 cursor-pointer"
               >
                 {t('auth.login')}
               </button>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* User Section in Header */}
           {user && (
@@ -596,6 +637,8 @@ function App() {
                 setPendingPayment(true);
                 replaceNav('login');
               }}
+              coffeePrice={coffeePrice}
+              coffeeEnabled={coffeeEnabled}
             />
           )}
 

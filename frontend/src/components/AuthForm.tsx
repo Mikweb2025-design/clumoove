@@ -33,6 +33,21 @@ export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps
   const [newPassword, setNewPassword] = useState<string>('');
   const [confirmNewPassword, setConfirmNewPassword] = useState<string>('');
   const [mustChangeError, setMustChangeError] = useState<string>('');
+  const [coffeePrice, setCoffeePrice] = useState<string>('2.00');
+  const [coffeeEnabled, setCoffeeEnabled] = useState<boolean>(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${apiUrl}/api/settings`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data && data.coffee_price) setCoffeePrice(data.coffee_price);
+        if (data && data.coffee_enabled !== undefined) setCoffeeEnabled(data.coffee_enabled !== 'false');
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [apiUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -649,6 +664,7 @@ export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps
       </div>
 
       {/* Coffee / Free Tier — shown on login page */}
+      {coffeeEnabled && (
       <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/70 text-amber-900 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -666,7 +682,8 @@ export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps
                   const res = await fetch(`${apiUrl}/api/settings`);
                   const settings = await res.json();
                   if (settings.paypal_email) {
-                    const link = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(settings.paypal_email)}&item_name=Buy+me+a+coffee+-+Clumoove&currency_code=EUR&amount=${encodeURIComponent(settings.coffee_price || '2.00')}`;
+                    const price = settings.coffee_price || '2.00';
+                    const link = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(settings.paypal_email)}&item_name=Buy+me+a+coffee+-+Clumoove&currency_code=EUR&amount=${encodeURIComponent(price)}`;
                     window.open(link, '_blank');
                   }
                 } catch { /* ignore */ }
@@ -676,11 +693,12 @@ export function AuthForm({ apiUrl, onAuthSuccess, onGoToConnect }: AuthFormProps
                 setIsLogin(false);
               }}
             >
-              €2 {t('coffee.buy')}
+              €{coffeePrice} {t('coffee.buy')}
             </button>
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

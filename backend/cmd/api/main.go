@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"html"
 	"log"
+	mathrand "math/rand"
 	"net"
 	"net/http"
 	"net/mail"
@@ -3741,10 +3742,27 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	paypalEmail, _ := db.GetSetting(s.db, "paypal_email")
-	coffeePrice, _ := db.GetSetting(s.db, "coffee_price")
-	if coffeePrice == "" {
-		coffeePrice = "2.00"
+
+	// A/B coffee price: random €1 / €2 / €3, persisted in a cookie so the
+	// same visitor sees the same price consistently across page loads.
+	coffeePrice := "2.00" // default fallback
+	if ck, err := r.Cookie("coffee_price"); err == nil && ck.Value != "" {
+		if ck.Value == "1.00" || ck.Value == "2.00" || ck.Value == "3.00" {
+			coffeePrice = ck.Value
+		}
+	} else {
+		prices := []string{"1.00", "2.00", "3.00"}
+		coffeePrice = prices[mathrand.Intn(len(prices))]
+		http.SetCookie(w, &http.Cookie{
+			Name:     "coffee_price",
+			Value:    coffeePrice,
+			Path:     "/",
+			MaxAge:   86400 * 365, // 1 year
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
 	}
+
 	freeGB, _ := db.GetSetting(s.db, "free_transfer_gb")
 	if freeGB == "" {
 		freeGB = "100"
@@ -3752,6 +3770,11 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 	coffeeReq, _ := db.GetSetting(s.db, "coffee_required")
 	if coffeeReq == "" {
 		coffeeReq = "true"
+	}
+
+	coffeeEnabled, _ := db.GetSetting(s.db, "coffee_enabled")
+	if coffeeEnabled == "" {
+		coffeeEnabled = "true"
 	}
 
 	resp := map[string]interface{}{
@@ -3762,6 +3785,7 @@ func (s *APIServer) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		"coffee_price":          coffeePrice,
 		"free_transfer_gb":      freeGB,
 		"coffee_required":       coffeeReq,
+		"coffee_enabled":        coffeeEnabled,
 	}
 
 	if claims, ok := r.Context().Value(auth.ClaimsKey).(*auth.Claims); ok && claims != nil {
@@ -3815,6 +3839,7 @@ func (s *APIServer) handleUpdateSetting(w http.ResponseWriter, r *http.Request) 
 		"coffee_price":          true,
 		"free_transfer_gb":      true,
 		"coffee_required":       true,
+		"coffee_enabled":        true,
 	}
 	if !allowedKeys[req.Key] {
 		writeError(w, http.StatusForbidden, ErrSettingForbidden)
@@ -3824,6 +3849,7 @@ func (s *APIServer) handleUpdateSetting(w http.ResponseWriter, r *http.Request) 
 	boolKeys := map[string]bool{
 		"registrations_enabled": true,
 		"coffee_required":       true,
+		"coffee_enabled":        true,
 	}
 	if boolKeys[req.Key] && req.Value != "true" && req.Value != "false" {
 		writeError(w, http.StatusBadRequest, ErrSettingInvalid)

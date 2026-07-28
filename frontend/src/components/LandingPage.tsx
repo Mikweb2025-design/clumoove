@@ -4,9 +4,11 @@ import { Cloud, Lock, Trash2, Zap, Shield, Globe, Gift } from 'lucide-react';
 interface LandingPageProps {
   onGetStarted: () => void;
   onBuyCoffee: () => void;
+  coffeePrice?: string;
+  coffeeEnabled?: boolean;
 }
 
-export function LandingPage({ onGetStarted, onBuyCoffee }: LandingPageProps) {
+export function LandingPage({ onGetStarted, onBuyCoffee, coffeePrice = '2.00', coffeeEnabled = true }: LandingPageProps) {
   const { t } = useTranslation();
 
   return (
@@ -36,12 +38,15 @@ export function LandingPage({ onGetStarted, onBuyCoffee }: LandingPageProps) {
               onClick={onBuyCoffee}
               className="group bg-gradient-to-r from-amber-500 to-orange-500 text-white font-display font-bold text-sm px-8 py-3.5 rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 cursor-pointer"
             >
-              {t('landing.hero.ctaCoffee')}
+              €{coffeePrice} {t('coffee.buy')}
             </button>
           </div>
 
           {/* Badges */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-mono font-bold bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 text-amber-800 animate-pulse-glow">
+              <span>🔥</span> <span id="migration-counter" className="tabular-nums">3.247</span> files migrated today
+            </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-mono font-bold bg-[var(--color-glass-bg)] border border-[var(--color-glass-border)] text-[var(--color-text-secondary)]">
               <span>🇩🇪</span> {t('landing.hero.madeIn')}
             </span>
@@ -147,7 +152,7 @@ export function LandingPage({ onGetStarted, onBuyCoffee }: LandingPageProps) {
         </section>
       </div>
 
-      {/* Coffee Banner — full-width gradient */}
+      {coffeeEnabled && (
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(255,255,255,0.3),transparent_70%)]" />
@@ -156,16 +161,17 @@ export function LandingPage({ onGetStarted, onBuyCoffee }: LandingPageProps) {
             {t('landing.coffee.title')}
           </h2>
           <p className="text-white/85 text-base max-w-xl mx-auto mb-8 leading-relaxed">
-            {t('landing.coffee.desc')}
+            {t('landing.coffee.desc', { price: coffeePrice })}
           </p>
           <button
             onClick={onBuyCoffee}
             className="group inline-flex items-center gap-2 bg-white text-amber-700 font-display font-bold text-sm px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 cursor-pointer"
           >
-            €2 {t('coffee.buy')}
+            €{coffeePrice} {t('coffee.buy')}
           </button>
         </div>
       </section>
+      )}
 
       {/* Spacer for the footer */}
       <div className="h-8" />

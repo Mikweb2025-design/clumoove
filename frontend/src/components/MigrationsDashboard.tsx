@@ -27,6 +27,7 @@ export function MigrationsDashboard({
   const [freeTransferGB, setFreeTransferGB] = useState(100);
   const [usageBytes, setUsageBytes] = useState(0);
   const [coffeePaid, setCoffeePaid] = useState(false);
+  const [coffeePrice, setCoffeePrice] = useState('2.00');
 
   const { t } = useTranslation();
   const { formatBytes, formatDateTime } = useFormat();
@@ -165,6 +166,7 @@ export function MigrationsDashboard({
           if (data.free_transfer_gb) setFreeTransferGB(parseInt(data.free_transfer_gb, 10) || 100);
           if (typeof data.coffee_paid === 'boolean') setCoffeePaid(data.coffee_paid);
           if (typeof data.total_bytes_transferred === 'number') setUsageBytes(data.total_bytes_transferred);
+          if (data.coffee_price) setCoffeePrice(data.coffee_price);
         }
       } catch { /* ignore */ }
     };
@@ -319,7 +321,7 @@ export function MigrationsDashboard({
               <div className="space-y-2 w-full">
                 <p className="font-display font-bold text-sm">{t('coffee.title')}</p>
                 <p className="text-xs text-amber-700/80 leading-relaxed max-w-lg">
-                  {t('coffee.description')}
+                  {t('coffee.description', { price: coffeePrice })}
                 </p>
               </div>
             </div>
@@ -333,7 +335,8 @@ export function MigrationsDashboard({
         });
                   const settings = await res.json();
                   if (settings.paypal_email) {
-                    const link = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(settings.paypal_email)}&item_name=Buy+me+a+coffee+-+Clumoove&currency_code=EUR&amount=${encodeURIComponent(settings.coffee_price || '2.00')}`;
+                    const price = settings.coffee_price || coffeePrice;
+                    const link = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(settings.paypal_email)}&item_name=Buy+me+a+coffee+-+Clumoove&currency_code=EUR&amount=${encodeURIComponent(price)}`;
                     window.open(link, '_blank');
                     if (confirm(t('coffee.paypalConfirm'))) {
                       const verifyRes = await fetch(`${apiUrl}/api/payment/verify`, {
@@ -354,7 +357,7 @@ export function MigrationsDashboard({
                 }
               }}
             >
-              {t('coffee.buy')}
+              €{coffeePrice} {t('coffee.buy')}
             </button>
           </div>
         </div>

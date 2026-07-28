@@ -676,12 +676,12 @@
     },
     "coffee": {
       "title": "☕ Support the project",
-      "desc": "100 GB free transfer — with a €2 coffee."
+      "desc": "100 GB free transfer — with a €{{price}} coffee."
     }
   },
   "coffee": {
     "title": "☕ Buy me a coffee",
-    "description": "100 GB transfer with a €2 coffee. Support the project with €2.",
+    "description": "100 GB transfer with a €{{price}} coffee. Support the project with €{{price}}.",
     "usage": "{{used}} / {{total}}",
     "freeTier": "Free Tier",
     "limitReached": "Limit reached!",
