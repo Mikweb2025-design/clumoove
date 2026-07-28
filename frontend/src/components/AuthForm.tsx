@@ -8,13 +8,16 @@ import { apiFetch } from '../utils/apiClient';
 interface AuthFormProps {
   apiUrl: string;
   onAuthSuccess: (token: string, user: UserType) => void;
+  onOrderCreated?: (orderId: string) => void;
+  showCoffeePayment?: boolean;
+  startInRegister?: boolean;
 }
 
-export function AuthForm({ apiUrl, onAuthSuccess }: AuthFormProps) {
+export function AuthForm({ apiUrl, onAuthSuccess, onOrderCreated, showCoffeePayment, startInRegister }: AuthFormProps) {
 	const { t, i18n } = useTranslation();
 	const language = i18n.language?.startsWith('de') ? 'de' : 'en';
   const translateApiError = useApiError();
-  const [isLogin, setIsLogin] = useState<boolean>(true);
+  const [isLogin, setIsLogin] = useState<boolean>(!startInRegister);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [displayName, setDisplayName] = useState<string>('');
@@ -865,8 +868,66 @@ export function AuthForm({ apiUrl, onAuthSuccess }: AuthFormProps) {
                  </button>
             </p>
           )}
-        </div>
+          </div>
+        )}
       </div>
+
+      {/* Coffee / Free Tier — shown on login page only when PayPal is configured */}
+      {showCoffeePayment && (
+      <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/70 text-amber-900 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="text-lg shrink-0">☕</span>
+            <p className="text-[11px] leading-snug text-amber-800/90">
+              {t('coffee.description')}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="shrink-0 text-[10px] font-bold font-mono bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors cursor-pointer"
+              onClick={async () => {
+                let orderId: string | null = null;
+                try {
+                  const orderRes = await fetch(`${apiUrl}/api/paypal/create-order`, { method: 'POST' });
+                  const orderData = await orderRes.json();
+                  if (orderData.success && orderData.order_id) {
+                    orderId = orderData.order_id;
+                    if (orderData.approval_url) {
+                      window.open(orderData.approval_url, '_blank');
+                    }
+                  }
+                } catch { /* PayPal API non configurata */ }
+                if (!orderId) {
+                  try {
+                    const res = await fetch(`${apiUrl}/api/settings`);
+                    const settings = await res.json();
+                    if (settings.paypal_email) {
+                      const link = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(settings.paypal_email)}&item_name=Buy+me+a+coffee+-+Clumoove&currency_code=EUR&amount=${encodeURIComponent(settings.coffee_price || '2.00')}`;
+                      window.open(link, '_blank');
+                    }
+                  } catch { /* ignore */ }
+                }
+                if (orderId && onOrderCreated) {
+                  onOrderCreated(orderId);
+                }
+                setSuccessMessage(t('coffee.paymentOpened'));
+                setError('');
+                setIsLogin(false);
+              }}
+            >
+              €2 {t('coffee.buy')}
+            </button>
+          </div>
+        </div>
+        </div>
+        {successMessage === t('coffee.paymentOpened') && (
+          <p className="text-[10px] text-amber-700/70 mt-2 text-center">
+            {t('coffee.verifyAfterPayment')}
+          </p>
+        )}
+      </div>
+      )}
     </div>
   );
 }

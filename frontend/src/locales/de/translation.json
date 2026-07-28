@@ -784,6 +784,75 @@
     "fileType": "Datei",
     "treeView": "Baumansicht",
     "listView": "Listenansicht"
+  },
+  "landing": {
+    "hero": {
+      "title": "Cloud-Datenmigration — schnell, sicher, ohne permanente Speicherung",
+      "subtitle": "Übertrage deine Dateien von einem Cloud-Anbieter zu einem anderen in einem verschlüsselten Stream. Deine Daten bleiben nie auf unseren Servern — sie bewegen sich direkt durch den Arbeitsspeicher.",
+      "ctaStart": "Kostenlos starten",
+      "ctaCoffee": "☕ Mit €2 unterstützen",
+      "madeIn": "Hergestellt in Deutschland",
+      "secure": "Sichere Übertragung"
+    },
+    "register": {
+      "title": "Kostenloses Konto erstellen",
+      "subtitle": "Keine Kreditkarte nötig. 100 GB gratis zum Start."
+    },
+    "how": {
+      "title": "So funktioniert's",
+      "step1": {
+        "title": "Verbinde deine Anbieter",
+        "desc": "Verknüpfe deine Quell- und Ziel-Cloud-Konten in Sekunden. Wir unterstützen alle großen Anbieter."
+      },
+      "step2": {
+        "title": "Verschlüsselte Übertragung im Arbeitsspeicher",
+        "desc": "Deine Daten werden durch verschlüsselte Speicherpuffer gestreamt — niemals auf unsere Infrastruktur geschrieben."
+      },
+      "step3": {
+        "title": "Keine Datenspeicherung",
+        "desc": "Nach Abschluss der Übertragung werden alle Daten gelöscht. Wir speichern nichts dauerhaft."
+      }
+    },
+    "why": {
+      "title": "Warum Clumoove",
+      "feature1": {
+        "title": "100 GB mit Kaffee",
+        "desc": "100 GB kostenloser Transfer — nur mit einem €2 Kaffee."
+      },
+      "feature2": {
+        "title": "Hergestellt in Deutschland",
+        "desc": "Gehostet und entwickelt in Deutschland. Vollständig DSGVO-konform."
+      },
+      "feature3": {
+        "title": "Sicherer Zwischenspeicher",
+        "desc": "Daten werden im Arbeitsspeicher verarbeitet, Ende-zu-Ende verschlüsselt, niemals dauerhaft gespeichert."
+      },
+      "feature4": {
+        "title": "Schnelle Übertragungen",
+        "desc": "Optimierte Infrastruktur für große Datenmengen mit parallelem Streaming."
+      }
+    },
+    "coffee": {
+      "title": "☕ Unterstütze das Projekt",
+      "desc": "100 GB kostenloser Transfer — mit einem €2 Kaffee."
+    }
+  },
+  "coffee": {
+    "title": "☕ Kauf mir einen Kaffee",
+    "description": "100 GB Übertragung mit einem €2 Kaffee. Unterstütze das Projekt mit €2.",
+    "usage": "{{used}} / {{total}}",
+    "freeTier": "Kostenloses Kontingent",
+    "limitReached": "Limit erreicht!",
+    "buy": "Kaffee kaufen",
+    "paymentFailed": "Zahlung fehlgeschlagen. Bitte versuche es erneut.",
+    "thankYou": "Vielen Dank! ☕ Genieße 100 GB kostenlosen Transfer!",
+    "notConfigured": "PayPal ist noch nicht konfiguriert.",
+    "paypalConfirm": "Hast du die Zahlung via PayPal abgeschlossen? OK klicken zum Bestätigen.",
+    "afterPay": "Zahlungslink geöffnet! Nach der Zahlung registrieren oder anmelden, um 100 GB kostenlosen Transfer zu aktivieren.",
+    "registerToActivate": "100 GB mit deinem Kaffee. Danke! Ein letzter Schritt für die Übertragung: hier registrieren.",
+    "paymentOpened": "PayPal-Seite in neuem Tab geöffnet. Nach der Zahlung vom Dashboard aus bestätigen.",
+    "verifyAfterPayment": "Nach der Zahlung im Dashboard auf 'Zahlung bestätigen' klicken, um 100 GB Bonus zu aktivieren."
+  }
   }
 }
 

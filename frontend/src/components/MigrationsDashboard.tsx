@@ -40,6 +40,10 @@ export function MigrationsDashboard({
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [freeTransferGB, setFreeTransferGB] = useState(100);
+  const [usageBytes, setUsageBytes] = useState(0);
+  const [coffeePaid, setCoffeePaid] = useState(false);
+  const [showCoffeePayment, setShowCoffeePayment] = useState(false);
 
   const { t } = useTranslation();
   const { formatBytes, formatDateTime } = useFormat();
@@ -159,6 +163,29 @@ export function MigrationsDashboard({
     return () => controller.abort();
   }, [apiUrl, token, t]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const fetchUsage = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/settings`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!cancelled) {
+          if (data.free_transfer_gb) setFreeTransferGB(parseInt(data.free_transfer_gb, 10) || 100);
+          if (typeof data.coffee_paid === 'boolean') setCoffeePaid(data.coffee_paid);
+          if (typeof data.total_bytes_transferred === 'number') setUsageBytes(data.total_bytes_transferred);
+          if ((data.coffee_required === 'true' || data.coffee_required === true) && data.paypal_configured === true) {
+            setShowCoffeePayment(true);
+          }
+        }
+      } catch { /* ignore */ }
+    };
+    fetchUsage();
+    const interval = setInterval(fetchUsage, 15000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [apiUrl, token]);
+
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -264,6 +291,80 @@ export function MigrationsDashboard({
             <button
               onClick={onStartNewMigration}
               className="group flex items-center gap-2 bg-gradient-to-r from-portal-orange to-orange-500 hover:from-orange-500 hover:to-portal-orange text-white px-5 py-3 rounded-2xl text-xs font-mono font-bold tracking-wider uppercase transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shrink-0"
+            >
+              <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform" />
+              <span>{t('migrations.newMigration')}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Coffee / Free Tier Banner — only when limit is reached and PayPal configured */}
+      {user && !coffeePaid && showCoffeePayment && usageBytes >= freeTransferGB * 1_073_741_824 && (
+        <div className="relative rounded-2xl p-5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/70 text-amber-900 shadow-sm overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(255,200,50,0.12),transparent_60%)] pointer-events-none" />
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl shrink-0 mt-0.5">☕</span>
+              <div className="space-y-2 w-full">
+                <p className="font-display font-bold text-sm">{t('coffee.title')}</p>
+                <p className="text-xs text-amber-700/80 leading-relaxed max-w-lg">
+                  {t('coffee.description')}
+                </p>
+              </div>
+            </div>
+            <button
+              id="paypal-button-container-fallback"
+              className="shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-orange-500 hover:to-amber-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all shadow-sm hover:shadow-md cursor-pointer whitespace-nowrap"
+              onClick={async () => {
+                try {
+                  const orderRes = await fetch(`${apiUrl}/api/paypal/create-order`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                  });
+                  const orderData = await orderRes.json();
+                  if (orderRes.ok && orderData.success && orderData.approval_url) {
+                    window.open(orderData.approval_url, '_blank');
+                    if (confirm(t('coffee.paypalConfirm'))) {
+                      const captureRes = await fetch(`${apiUrl}/api/paypal/capture-order`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_id: orderData.order_id }),
+                      });
+                      const captureData = await captureRes.json();
+                      if (captureData.success) {
+                        onStartNewMigration();
+                      } else {
+                        alert(captureData.message || t('coffee.paymentFailed'));
+                      }
+                    }
+                  } else {
+                    const settingsRes = await fetch(`${apiUrl}/api/settings`, {
+                      headers: { 'Authorization': `Bearer ${token}` },
+                    });
+                    const settings = await settingsRes.json();
+                    if (settings.paypal_email) {
+                      const link = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent(settings.paypal_email)}&item_name=Buy+me+a+coffee+-+Clumoove&currency_code=EUR&amount=${encodeURIComponent(settings.coffee_price || '2.00')}`;
+                      window.open(link, '_blank');
+                      if (confirm(t('coffee.paypalConfirm'))) {
+                        const verifyRes = await fetch(`${apiUrl}/api/payment/verify`, {
+                          method: 'POST',
+                          headers: { 'Authorization': `Bearer ${token}` },
+                        });
+                        if (verifyRes.ok) {
+                          onStartNewMigration();
+                        } else {
+                          alert(t('coffee.paymentFailed'));
+                        }
+                      }
+                    } else {
+                      alert(t('coffee.notConfigured'));
+                    }
+                  }
+                } catch {
+                  alert(t('coffee.notConfigured'));
+                }
+              }}
             >
               <Play className="w-4 h-4 fill-white group-hover:scale-110 transition-transform" />
               <span>{t('migrations.newMigration')}</span>

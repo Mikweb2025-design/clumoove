@@ -230,6 +230,12 @@ func main() {
 	mux.Handle("PUT /api/sync/{id}/threads", jwtMiddleware(http.HandlerFunc(server.handleSetSyncThreads)))
 	mux.Handle("PUT /api/sync/{id}/bandwidth", jwtMiddleware(http.HandlerFunc(server.handleSetSyncBandwidth)))
 
+	// Coffee payment routes (Protected)
+	mux.Handle("POST /api/payment/verify", jwtMiddleware(http.HandlerFunc(server.handleVerifyCoffeePayment)))
+	mux.Handle("GET /api/payment/status", jwtMiddleware(http.HandlerFunc(server.handlePaymentStatus)))
+	mux.Handle("POST /api/paypal/create-order", jwtMiddleware(http.HandlerFunc(server.handleCreatePayPalOrder)))
+	mux.Handle("POST /api/paypal/capture-order", jwtMiddleware(http.HandlerFunc(server.handleCapturePayPalOrder)))
+
 	// Schedule Management Routes (Protected)
 	mux.Handle("GET /api/schedule", jwtMiddleware(http.HandlerFunc(server.handleListSchedules)))
 	mux.Handle("GET /api/schedule/{id}", jwtMiddleware(http.HandlerFunc(server.handleGetSchedule)))

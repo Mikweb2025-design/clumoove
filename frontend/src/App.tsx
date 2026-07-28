@@ -77,6 +77,12 @@ function App() {
   const [localStorageEnabled, setLocalStorageEnabled] = useState<boolean>(false);
   const [oauthProviders, setOauthProviders] = useState<Record<string, boolean>>({});
 
+  const [paypalConfigured, setPaypalConfigured] = useState<boolean>(false);
+  const [coffeeRequired, setCoffeeRequired] = useState<boolean>(false);
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+
+  const showCoffeePayment = coffeeRequired && paypalConfigured;
+
   // Cancel any open confirm when the user leaves the view that opened it.
   useEffect(() => {
     dismissConfirm();
@@ -86,11 +92,19 @@ function App() {
     fetch(`${API_URL}/api/settings`)
       .then((res) => res.json())
       .then((data) => {
-        if (data && data.local_storage_enabled === true) {
-          setLocalStorageEnabled(true);
-        }
-        if (data && data.oauth_providers && typeof data.oauth_providers === 'object') {
-          setOauthProviders(data.oauth_providers);
+        if (data) {
+          if (data.local_storage_enabled === true) {
+            setLocalStorageEnabled(true);
+          }
+          if (data.oauth_providers && typeof data.oauth_providers === 'object') {
+            setOauthProviders(data.oauth_providers);
+          }
+          if (data.paypal_configured === true) {
+            setPaypalConfigured(true);
+          }
+          if (data.coffee_required === 'true' || data.coffee_required === true) {
+            setCoffeeRequired(true);
+          }
         }
       })
       .catch(() => {});
@@ -389,6 +403,22 @@ function App() {
 	  localStorage.setItem('i18nextLng', loggedUser.language);
 	  void i18n.changeLanguage(loggedUser.language);
 	}
+    if (pendingOrderId) {
+      const orderId = pendingOrderId;
+      setPendingOrderId(null);
+      fetch(`${API_URL}/api/paypal/capture-order`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId }),
+      }).then(r => r.json()).then(data => {
+        if (!data.success) {
+          fetch(`${API_URL}/api/payment/verify`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${accessToken}` },
+          });
+        }
+      }).catch(() => {});
+    }
     replaceNav('history', '');
   };
 
@@ -557,8 +587,27 @@ function App() {
       {/* Main Structural Body */}
       <main className="flex-grow flex flex-col justify-center px-6 py-8 max-w-5xl w-full mx-auto relative z-10 animate-slide-up">
         <div className="w-full">
+          {step === 'landing' && (
+            <LandingPage
+              showCoffeePayment={showCoffeePayment}
+              inlineAuth={showCoffeePayment ? undefined : { apiUrl: API_URL, onAuthSuccess: handleAuthSuccess }}
+              onGetStarted={() => replaceNav('login')}
+              onBuyCoffee={async () => {
+                try {
+                  const r = await fetch(`${API_URL}/api/paypal/create-order`, { method: 'POST' });
+                  const d = await r.json();
+                  if (d.success && d.approval_url) {
+                    setPendingOrderId(d.order_id);
+                    window.open(d.approval_url, '_blank');
+                  }
+                } catch { /* PayPal API non configurata */ }
+                replaceNav('login');
+              }}
+            />
+          )}
+
           {step === 'login' && (
-            <AuthForm apiUrl={API_URL} onAuthSuccess={handleAuthSuccess} />
+            <AuthForm apiUrl={API_URL} onAuthSuccess={handleAuthSuccess} onOrderCreated={(id) => setPendingOrderId(id)} showCoffeePayment={showCoffeePayment} />
           )}
 
           {step === 'reset-password' && (
